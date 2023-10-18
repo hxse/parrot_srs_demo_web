@@ -22,11 +22,11 @@
     * https://github.com/open-spaced-repetition/fsrs-optimizer/issues/13
     * https://github.com/open-spaced-repetition/fsrs-optimizer/issues/36
     * 日志按如下格式就行了
-```csv
-card_id,review_time,review_rating,review_state,review_duration
-20230723154504-duzgj0v,1691046464000,2,0,5
-20230713230946-17j80ne,1691046470000,2,2,5
-```
+      ```csv
+      card_id,review_time,review_rating,review_state,review_duration
+      20230723154504-duzgj0v,1691046464000,2,0,5
+      20230713230946-17j80ne,1691046470000,2,2,5
+      ```
 # 框架问题
   * https://github.com/jimmywarting/native-file-system-adapter/issues/14
     * 目前不支持remove,所以用idb
