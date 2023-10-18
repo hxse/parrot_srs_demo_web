@@ -1,0 +1,25 @@
+{
+  "name": "parrot_srs_demo",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "date-differencer": "^0.3.2",
+    "fsrs.js": "^1.1.1",
+    "idb": "^7.1.1",
+    "jszip": "^3.10.1",
+    "mime": "^3.0.0",
+    "native-file-system-adapter": "^3.0.0",
+    "solid-js": "^1.7.8"
+  },
+  "devDependencies": {
+    "typescript": "^5.0.2",
+    "vite": "^4.4.5",
+    "vite-plugin-solid": "^2.7.0"
+  }
+}

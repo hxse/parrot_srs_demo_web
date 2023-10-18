@@ -1,0 +1,26 @@
+#root {
+  margin: 0 auto;
+  text-align: center;
+}
+
+.scroll {
+  margin: 0 auto;
+  overflow: scroll;
+  text-align: left;
+  height: 15vh;
+  width: 85vw;
+  display: block;
+}
+
+.text {
+  height: 60vh;
+  width: 85vw;
+  overflow: scroll;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.wait {
+  color: red;
+}
