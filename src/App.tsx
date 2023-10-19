@@ -77,7 +77,7 @@ function reSetArr(fileData) {
 
 function App() {
   //test参数是用来测试的
-  const [getTestDate, setTestDate] = createSignal<boolean>(true)
+  const [getTestDate, setTestDate] = createSignal<boolean>(false)
   const [getTestPreview, setTestPreview] = createSignal<boolean>(false)
 
   const [getIndex, setIndex] = createSignal<number>(null)
@@ -308,16 +308,6 @@ function App() {
 
   function showRating(rating: number, update = false) {
 
-    if (!getTestPreview()) {
-      const i = reSetIndex(getFileData())
-      if (i === undefined) {
-        setIndex(i)
-        return
-      } else {
-        setIndex(i)
-      }
-    }
-
     const idx = getIndex()
     if (idx === null) return
 
@@ -443,24 +433,77 @@ function App() {
         <br />
         <button onClick={() => {
           showRating(1, true)
+
+          if (!getTestPreview()) {
+            const i = reSetIndex(getFileData())
+            setFileData((obj) => {
+              obj.index = i
+              return { ...obj }
+            })
+            if (i === undefined) {
+              setIndex(i)
+              return
+            } else {
+              setIndex(i)
+            }
+          }
         }}>
           {getRating()[1] ? getRating()[1] : 'rating1'}
         </button>
         <button onClick={() => {
           showRating(2, true)
+
+          if (!getTestPreview()) {
+            const i = reSetIndex(getFileData())
+            setFileData((obj) => {
+              obj.index = i
+              return { ...obj }
+            })
+            if (i === undefined) {
+              setIndex(i)
+              return
+            } else {
+              setIndex(i)
+            }
+          }
         }}>
           {getRating()[2] ? getRating()[2] : 'rating2'}
         </button>
         <button onClick={() => {
-          // if (!getTest()) {
-          // console.log(2333)
-          // }
           showRating(3, true)
+
+          if (!getTestPreview()) {
+            const i = reSetIndex(getFileData())
+            setFileData((obj) => {
+              obj.index = i
+              return { ...obj }
+            })
+            if (i === undefined) {
+              setIndex(i)
+              return
+            } else {
+              setIndex(i)
+            }
+          }
         }}>
           {getRating()[3] ? getRating()[3] : 'rating3'}
         </button>
         <button onClick={() => {
           showRating(4, true)
+
+          if (!getTestPreview()) {
+            const i = reSetIndex(getFileData())
+            setFileData((obj) => {
+              obj.index = i
+              return { ...obj }
+            })
+            if (i === undefined) {
+              setIndex(i)
+              return
+            } else {
+              setIndex(i)
+            }
+          }
         }}>
           {getRating()[4] ? getRating()[4] : 'rating4'}
         </button>
