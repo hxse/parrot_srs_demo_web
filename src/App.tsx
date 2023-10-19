@@ -1,4 +1,4 @@
-import { createSignal, createEffect, on, Show, batch, onMount, For } from 'solid-js'
+import { createSignal, createEffect, on, Show, batch, onMount, For, Switch, Match } from 'solid-js'
 
 import solidLogo from './assets/solid.svg'
 import viteLogo from '/vite.svg'
@@ -39,18 +39,84 @@ function preProcessing(obj) {
 function getCacheName(file, obj) {
   return `${obj.name} ${file.name}`
 }
+function reSetArr(fileData) {
+  const waitArr = []//已过期的旧卡
+  const oldArr = []//未过期的旧卡
+  const newArr = []//未学过的新卡
+  const _oldArr = []//临时数组
+  for (let index = 0; index < fileData.card.length; index++) {
+    const card = fileData.card
+    const fsrs = card[index].fsrs;
+    if (fsrs) {
+      _oldArr.push(index)
+    } else {
+      newArr.push(index)
+    }
+  }
+  _oldArr.sort(function (a, b) {
+    const dueA = fileData.card[a].fsrs.due
+    const dueB = fileData.card[b].fsrs.due
+    return dueA.getTime() - dueB.getTime()
+  });
+
+  for (const i of _oldArr) {
+    const now = new Date()
+    const due = fileData.card[i].fsrs.due
+    const diffTime = now.getTime() - due.getTime()
+    if (diffTime >= 0) {
+      waitArr.push(i)
+    } else {
+      oldArr.push(i)
+    }
+  }
+  return {
+    waitArr, oldArr, newArr
+  }
+
+}
 
 function App() {
+  //test参数是用来测试的
+  const [getTestDate, setTestDate] = createSignal<boolean>(true)
+  const [getTestPreview, setTestPreview] = createSignal<boolean>(false)
+
   const [getIndex, setIndex] = createSignal<number>(null)
   const [getIsLoad, setIsLoad] = createSignal(false)
   const [getFileData, setFileData] = createSignal<any>({})
   const [getFileObj, setFileObj] = createSignal<any>({})
   const [getRating, setRating] = createSignal<any>({})
-  const [getTest, setTest] = createSignal<boolean>(true)
+
   const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>(['card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name'])
+  //https://github.com/open-spaced-repetition/fsrs-optimizer
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
-  //https://github.com/open-spaced-repetition/fsrs-optimizer
+
+  const [getWaitArr, setWaitArr] = createSignal<Array<number>>([])
+  const [getOldArr, setOldArr] = createSignal<Array<number>>([])
+  const [getNewArr, setNewArr] = createSignal<Array<number>>([])
+
+  function reSetIndex(fileData) {
+    const { waitArr, oldArr, newArr } = reSetArr(fileData)
+
+    console.log('waitArr', waitArr)
+    console.log(waitArr.map((i) => fileData.card[i].fsrs.due))
+
+    console.log('oldArr', oldArr)
+    console.log(oldArr.map((i) => fileData.card[i].fsrs.due))
+
+    console.log('newArr', newArr)
+    console.log(newArr.map((i) => fileData.card[i]))
+
+    if (waitArr.length > 0) {
+      console.log('show', waitArr[0])
+      return waitArr[0]
+    }
+
+    if (newArr.length > 0) {
+      console.log('show', newArr[0])
+      return newArr[0]
+    }
+  }
 
   async function readZip() {
     const fileHandle = await openFile()
@@ -94,7 +160,11 @@ function App() {
           setIsLoad(true)
           setFileData(obj)
           setFileObj(file)
-          setIndex(obj.index)
+          if (getTestPreview()) {
+            setIndex(obj.index)
+          } else {
+            setIndex(reSetIndex(obj))
+          }
         })
       }
       if (fileHandle.name == 'revlog.csv') {
@@ -165,7 +235,11 @@ function App() {
           setIsCacheFile(true)
           setFileObj(file)
           setFileData(obj)
-          setIndex(obj.index)
+          if (getTestPreview()) {
+            setIndex(obj.index)
+          } else {
+            setIndex(reSetIndex(obj))
+          }
           setIsLoad(true)
         }
         if (file.name == 'revlog.csv') {
@@ -233,6 +307,17 @@ function App() {
   }, { defer: true }));
 
   function showRating(rating: number, update = false) {
+
+    if (!getTestPreview()) {
+      const i = reSetIndex(getFileData())
+      if (i === undefined) {
+        setIndex(i)
+        return
+      } else {
+        setIndex(i)
+      }
+    }
+
     const idx = getIndex()
     if (idx === null) return
 
@@ -241,7 +326,7 @@ function App() {
       card = newCard()
     }
 
-    let scheduling_cards = schedulingCard(card, getTest())
+    let scheduling_cards = schedulingCard(card, getTestDate())
 
 
     if (update) {
@@ -250,7 +335,7 @@ function App() {
         i.card[idx].fsrs = card
         return { ...i }
       })
-      scheduling_cards = schedulingCard(card, getTest())
+      scheduling_cards = schedulingCard(card, getTestDate())
 
       function updateLog() {
 
@@ -304,22 +389,27 @@ function App() {
           store('clear', { storeName: 'file' })
           store('clear', { storeName: 'media' })
         }}>清理缓存</button>
-        <button onClick={() => {
-          setIndex((index) => {
-            index = index - 1 < 0 ? 0 : index - 1
-            return index
-          })
-        }}>
-          prev
-        </button>
-        <button onClick={() => {
-          setIndex((index) => {
-            index = index + 1 >= getFileData().card.length - 1 ? getFileData().card.length - 1 : index + 1
-            return index
-          })
-        }}>
-          next
-        </button>
+
+        <Show
+          when={getTestDate()}
+        >
+          <button onClick={() => {
+            setIndex((index) => {
+              index = index - 1 < 0 ? 0 : index - 1
+              return index
+            })
+          }}>
+            prev
+          </button>
+          <button onClick={() => {
+            setIndex((index) => {
+              index = index + 1 >= getFileData().card.length - 1 ? getFileData().card.length - 1 : index + 1
+              return index
+            })
+          }}>
+            next
+          </button>
+        </Show>
 
         <div>
           {"index" + " " + getIndex() + " " + "fileDataIndex" + " " + getFileData()?.index}
@@ -330,11 +420,22 @@ function App() {
             when={getIsLoad()}
             fallback={<div class="wait">please select a local file</div>}
           >
-            <div>
-              {
-                getFileData()?.card?.[getIndex()]?.text?.en
-              }
-            </div>
+            <Switch fallback={'not find template'}>
+              <Match when={getTestDate()}>
+                <div>
+                  {
+                    getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.en
+                  }
+                </div>
+              </Match>
+              <Match when={!getTestDate()}>
+                <div>
+                  {
+                    getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.en
+                  }
+                </div>
+              </Match>
+            </Switch>
           </Show>
         </div>
 
@@ -351,6 +452,9 @@ function App() {
           {getRating()[2] ? getRating()[2] : 'rating2'}
         </button>
         <button onClick={() => {
+          // if (!getTest()) {
+          // console.log(2333)
+          // }
           showRating(3, true)
         }}>
           {getRating()[3] ? getRating()[3] : 'rating3'}
