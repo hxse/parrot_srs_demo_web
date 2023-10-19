@@ -13,6 +13,12 @@ import {
   addDateTimeDiff, addDayTimeDiff
 } from "date-differencer";
 
+function sameDay(date1, date2) {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate()
+}
+
 function datediff(first, second) {
   first.setSeconds(first.getSeconds() - 3);//error
   const diff = dateTimeDiff(first, second)
@@ -91,6 +97,9 @@ function App() {
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
 
+  const [getLimit, setLimit] = createSignal<number>(4)
+  const [getLimitCur, setLimitCur] = createSignal<number>(0)
+
   const [getWaitArr, setWaitArr] = createSignal<Array<number>>([])
   const [getOldArr, setOldArr] = createSignal<Array<number>>([])
   const [getNewArr, setNewArr] = createSignal<Array<number>>([])
@@ -107,15 +116,25 @@ function App() {
     console.log('newArr', newArr)
     console.log(newArr.map((i) => fileData.card[i]))
 
+
     if (waitArr.length > 0) {
       console.log('show', waitArr[0])
       return waitArr[0]
     }
 
+    const l = [...waitArr, ...oldArr].map((i) => fileData.card[i].fsrs.last_review).filter((i) => sameDay(i, new Date()))
+    setLimitCur(l.length)
+    if (l.length >= getLimit()) {
+      return undefined
+    }
+
+
     if (newArr.length > 0) {
       console.log('show', newArr[0])
       return newArr[0]
     }
+
+
   }
 
   async function readZip() {
@@ -309,7 +328,7 @@ function App() {
   function showRating(rating: number, update = false) {
 
     const idx = getIndex()
-    if (idx === null) return
+    if (idx === null || idx === undefined) return
 
     let card = getFileData()?.card[idx]?.fsrs
     if (!card) {
@@ -380,9 +399,7 @@ function App() {
           store('clear', { storeName: 'media' })
         }}>清理缓存</button>
 
-        <Show
-          when={getTestDate()}
-        >
+        <Show when={getTestDate()}>
           <button onClick={() => {
             setIndex((index) => {
               index = index - 1 < 0 ? 0 : index - 1
@@ -402,7 +419,7 @@ function App() {
         </Show>
 
         <div>
-          {"index" + " " + getIndex() + " " + "fileDataIndex" + " " + getFileData()?.index}
+          {`index: ${getIndex()} fileDataIndex: ${getFileData()?.index} limitCur: ${getLimitCur()} limitMax: ${getLimit()} count: ${getFileData()?.card?.length}`}
         </div>
 
         <div class="text">
@@ -429,84 +446,76 @@ function App() {
           </Show>
         </div>
 
-
         <br />
-        <button onClick={() => {
-          showRating(1, true)
 
-          if (!getTestPreview()) {
-            const i = reSetIndex(getFileData())
-            setFileData((obj) => {
-              obj.index = i
-              return { ...obj }
-            })
-            if (i === undefined) {
-              setIndex(i)
-              return
-            } else {
+        <Show
+          when={getIndex() !== undefined}
+        >
+          <button onClick={() => {
+            if (getIndex() === undefined) return
+
+            showRating(1, true)
+
+            if (!getTestPreview()) {
+              const i = reSetIndex(getFileData())
+              setFileData((obj) => {
+                obj.index = i
+                return { ...obj }
+              })
               setIndex(i)
             }
-          }
-        }}>
-          {getRating()[1] ? getRating()[1] : 'rating1'}
-        </button>
-        <button onClick={() => {
-          showRating(2, true)
+          }}>
+            {getRating()[1] ? getRating()[1] : 'rating1'}
+          </button>
+          <button onClick={() => {
+            if (getIndex() === undefined) return
 
-          if (!getTestPreview()) {
-            const i = reSetIndex(getFileData())
-            setFileData((obj) => {
-              obj.index = i
-              return { ...obj }
-            })
-            if (i === undefined) {
-              setIndex(i)
-              return
-            } else {
+            showRating(2, true)
+
+            if (!getTestPreview()) {
+              const i = reSetIndex(getFileData())
+              setFileData((obj) => {
+                obj.index = i
+                return { ...obj }
+              })
               setIndex(i)
             }
-          }
-        }}>
-          {getRating()[2] ? getRating()[2] : 'rating2'}
-        </button>
-        <button onClick={() => {
-          showRating(3, true)
+          }}>
+            {getRating()[2] ? getRating()[2] : 'rating2'}
+          </button>
+          <button onClick={() => {
+            if (getIndex() === undefined) return
 
-          if (!getTestPreview()) {
-            const i = reSetIndex(getFileData())
-            setFileData((obj) => {
-              obj.index = i
-              return { ...obj }
-            })
-            if (i === undefined) {
-              setIndex(i)
-              return
-            } else {
+            showRating(3, true)
+
+            if (!getTestPreview()) {
+              const i = reSetIndex(getFileData())
+              setFileData((obj) => {
+                obj.index = i
+                return { ...obj }
+              })
               setIndex(i)
             }
-          }
-        }}>
-          {getRating()[3] ? getRating()[3] : 'rating3'}
-        </button>
-        <button onClick={() => {
-          showRating(4, true)
+          }}>
+            {getRating()[3] ? getRating()[3] : 'rating3'}
+          </button>
+          <button onClick={() => {
+            if (getIndex() === undefined) return
 
-          if (!getTestPreview()) {
-            const i = reSetIndex(getFileData())
-            setFileData((obj) => {
-              obj.index = i
-              return { ...obj }
-            })
-            if (i === undefined) {
-              setIndex(i)
-              return
-            } else {
+            showRating(4, true)
+
+            if (!getTestPreview()) {
+              const i = reSetIndex(getFileData())
+              setFileData((obj) => {
+                obj.index = i
+                return { ...obj }
+              })
               setIndex(i)
             }
-          }
-        }}>
-          {getRating()[4] ? getRating()[4] : 'rating4'}
-        </button>
+          }}>
+            {getRating()[4] ? getRating()[4] : 'rating4'}
+          </button>
+        </Show>
 
         <div class='scroll'>
           <For each={getLogsCsv()}>
