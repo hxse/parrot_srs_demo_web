@@ -37,3 +37,6 @@
   * 把快捷键功能写好
   * 把自定义模版功能写好
   * 测试一下和anki的fsrs间隔是否一致
+  * 浏览器对于自动播放音频支持的很糟糕,用RN重构吧
+    * https://developer.chrome.com/blog/autoplay/
+  * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留

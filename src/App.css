@@ -15,10 +15,18 @@
 .text {
   height: 60vh;
   width: 85vw;
+  /* left: 100px; */
   overflow: scroll;
-  display: flex;
-  justify-content: center;
-  align-items: center;
+  /* display: flex; */
+  /* justify-content: center; */
+  /* align-items: center; */
+  /* display: inline-block; */
+  /* vertical-align: middle; */
+}
+
+.text-child {
+  position: relative;
+  top: 4vh;
 }
 
 .wait {

@@ -45,6 +45,7 @@ function preProcessing(obj) {
 function getCacheName(file, obj) {
   return `${obj.name} ${file.name}`
 }
+
 function reSetArr(fileData) {
   const waitArr = []//已过期的旧卡
   const oldArr = []//未过期的旧卡
@@ -80,7 +81,7 @@ function reSetArr(fileData) {
   }
 
 }
-
+let audioRef
 function App() {
   //test参数是用来测试的
   const [getTestDate, setTestDate] = createSignal<boolean>(false)
@@ -91,6 +92,7 @@ function App() {
   const [getFileData, setFileData] = createSignal<any>({})
   const [getFileObj, setFileObj] = createSignal<any>({})
   const [getRating, setRating] = createSignal<any>({})
+  const [getMediaArr, setMediaArr] = createSignal<any>([])
 
   const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>(['card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name'])
   //https://github.com/open-spaced-repetition/fsrs-optimizer
@@ -104,6 +106,15 @@ function App() {
   const [getOldArr, setOldArr] = createSignal<Array<number>>([])
   const [getNewArr, setNewArr] = createSignal<Array<number>>([])
 
+
+  function audioEvent(data, ref) {
+    // const target = event.target
+    // console.log(target.currentTime, data);
+    // target.currentTime = 30
+    // target.play()
+    // console.log(target.played())
+  }
+
   function reSetIndex(fileData) {
     const { waitArr, oldArr, newArr } = reSetArr(fileData)
 
@@ -116,7 +127,6 @@ function App() {
     console.log('newArr', newArr)
     console.log(newArr.map((i) => fileData.card[i]))
 
-
     if (waitArr.length > 0) {
       console.log('show', waitArr[0])
       return waitArr[0]
@@ -128,13 +138,20 @@ function App() {
       return undefined
     }
 
-
     if (newArr.length > 0) {
       console.log('show', newArr[0])
       return newArr[0]
     }
 
+  }
 
+  function getAudio() {
+    const audioArr = getMediaArr().filter((i) => i.name.endsWith('.mp3'))
+    console.log(2333333, audioArr)
+    if (audioArr.length > 0) {
+      return URL.createObjectURL(audioArr[0])
+    }
+    return ""
   }
 
   async function readZip() {
@@ -184,6 +201,12 @@ function App() {
           } else {
             setIndex(reSetIndex(obj))
           }
+
+          const m = []
+          for (const fileHandle of mediaArr) {
+            m.push(await getFile(fileHandle))
+          }
+          setMediaArr(m)
         })
       }
       if (fileHandle.name == 'revlog.csv') {
@@ -221,6 +244,7 @@ function App() {
     await downloadFile(str)
   }
 
+
   onMount(async () => {
     //todo 这里要读一下indexeddb缓存
     if (navigator.storage && navigator.storage.persist) {
@@ -245,7 +269,18 @@ function App() {
       const file = await store('get', { storeName: 'file', key: i })
       fileArr.push(file)
     }
-    console.log('use cache', fileArr)
+    console.log('use cache fileArr', fileArr)
+
+    const res2 = await store('getAllKeys', { storeName: 'media' })
+    const mediaArr = []
+    for (const i of res2) {
+      // const [deck_name, name] = [fullName.split(' ').slice(0, 1).join(' '), fullName.split(' ').slice(1).join(' ')]
+      const file = await store('get', { storeName: 'media', key: i })
+      mediaArr.push(file)
+    }
+    console.log('use cache mediaArr', mediaArr)
+
+
     batch(async () => {
       for (const file of fileArr) {
         if (file.name == 'config.json') {
@@ -260,6 +295,11 @@ function App() {
             setIndex(reSetIndex(obj))
           }
           setIsLoad(true)
+          setMediaArr(mediaArr)
+
+          console.log(audioRef, 23333333)
+          // audioRef.muted = true; // without this line it's not working although I have "muted" in HTML
+          audioRef.play()
         }
         if (file.name == 'revlog.csv') {
           const text = await file.text()
@@ -427,6 +467,27 @@ function App() {
             when={getIsLoad()}
             fallback={<div class="wait">please select a local file</div>}
           >
+            <div class="text-child">
+              <div>
+                <div>
+
+                  <audio ref={audioRef} src={getAudio()} controls onLoadedMetaData={[audioEvent, {
+                    startTime: getFileData()?.card?.[getIndex()]?.start,
+                    endTime: getFileData()?.card?.[getIndex()]?.end,
+                  }]} >
+                    {/* <source id="myAudio" type="audio/mp3" >
+                    </source> */}
+                  </audio>
+                </div>
+                <br />
+                {getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.['en']}
+                <br />
+                <br />
+                {getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.['zh-cn']}
+                <br />
+              </div>
+            </div>
+            {/*
             <Switch fallback={'not find template'}>
               <Match when={getTestDate()}>
                 <div>
@@ -442,15 +503,13 @@ function App() {
                   }
                 </div>
               </Match>
-            </Switch>
+            </Switch> */}
           </Show>
         </div>
 
         <br />
 
-        <Show
-          when={getIndex() !== undefined}
-        >
+        <Show when={getIndex() !== undefined}>
           <button onClick={() => {
             if (getIndex() === undefined) return
 
