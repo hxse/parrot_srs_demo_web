@@ -81,10 +81,29 @@ function reSetArr(fileData) {
   }
 
 }
+async function cleanUserData(fileObj, fk) {
+  const [deck_name, name] = [fk.split(' ').slice(0, 1).join(' '), fk.split(' ').slice(1).join(' ')]
+  if (name == "config.json") {
+    const text = await fileObj.text()
+    const obj = parseFsrsObj(text);
+    obj.haha = "heihei"
+    for (let c of obj.card) {
+      if (c.fsrs) {
+        delete c.fsrs
+      }
+    }
+    const str = JSON.stringify(obj, null, 4)
+    const newfileObj = createFile(str, name)
+    return newfileObj
+  }
+  return fileObj
+}
+
 let audioRef
 let beginRef
 let startOffsetRef
 let endOffsetRef
+let logRef
 function App() {
   //test参数是用来测试的
   const [getTestDate, setTestDate] = createSignal<boolean>(false)
@@ -97,7 +116,7 @@ function App() {
   const [getRating, setRating] = createSignal<any>({})
   const [getMediaArr, setMediaArr] = createSignal<any>([])
 
-  const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>(['card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name'])
+  const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>(['card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'])
   //https://github.com/open-spaced-repetition/fsrs-optimizer
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
@@ -327,13 +346,16 @@ function App() {
     }
   }
 
-  async function runSaveFile() {
+  async function runSaveFile(no_data) {
     const fileKeys = await store('getAllKeys', { storeName: 'file' })
     const mediaKeys = await store('getAllKeys', { storeName: 'media' })
     const fileArr = []
     const mediaArr = []
     for (let fk of fileKeys) {
-      const fileObj = await store('get', { storeName: 'file', key: fk })
+      let fileObj = await store('get', { storeName: 'file', key: fk })
+      if (no_data) {
+        fileObj = await cleanUserData(fileObj, fk)
+      }
       fileArr.push(fileObj)
     }
     for (let mk of mediaKeys) {
@@ -409,6 +431,7 @@ function App() {
           const text = await file.text()
           setIsCacheLog(true)
           setLogsCsv(text.split('\n'))
+          logRef.scrollTop = logRef.scrollHeight;
         }
       }
     })
@@ -467,6 +490,8 @@ function App() {
       console.log('init: logsCsv', getFileData())
     }
 
+    logRef.scrollTop = logRef.scrollHeight;
+
   }, { defer: true }));
 
   function showRating(rating: number, update = false) {
@@ -501,8 +526,9 @@ function App() {
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           day_start: 8,
           deck_name: getFileData().name,
+          card_sort: idx,
         }
-        const logCsv = `${logObj.card_id},${logObj.review_time},${logObj.review_rating},${logObj.review_state},${logObj.review_duration},${logObj.timezone},${logObj.day_start},${logObj.deck_name}`
+        const logCsv = `${logObj.card_id},${logObj.review_time},${logObj.review_rating},${logObj.review_state},${logObj.review_duration},${logObj.timezone},${logObj.day_start},${logObj.deck_name},${logObj.card_sort}`
         setLogsCsv((i) => {
           i.push(logCsv)
           return [...i]
@@ -538,6 +564,10 @@ function App() {
           // runDownloadFile(fileData())
           runSaveFile()
         }}>保存</button>
+        <button onclick={() => {
+          // runDownloadFile(fileData())
+          runSaveFile(true)
+        }}>保存不带数据</button>
         <button onclick={() => {
           store('clear', { storeName: 'file' })
           store('clear', { storeName: 'media' })
@@ -754,7 +784,7 @@ function App() {
           </button>
         </Show>
 
-        <div class='scroll'>
+        <div ref={logRef} class='scroll'>
           <For each={getLogsCsv()}>
             {(log, i) => (
               <div >
