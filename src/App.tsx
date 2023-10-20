@@ -82,6 +82,9 @@ function reSetArr(fileData) {
 
 }
 let audioRef
+let beginRef
+let startOffsetRef
+let endOffsetRef
 function App() {
   //test参数是用来测试的
   const [getTestDate, setTestDate] = createSignal<boolean>(false)
@@ -99,13 +102,107 @@ function App() {
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
 
-  const [getLimit, setLimit] = createSignal<number>(4)
+  const [getLimit, setLimit] = createSignal<number>(15)
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
+
+  const [getStartOffset, setStartOffset] = createSignal<number>(0)
+  const [getEndOffset, setEndOffset] = createSignal<number>(0)
 
   const [getWaitArr, setWaitArr] = createSignal<Array<number>>([])
   const [getOldArr, setOldArr] = createSignal<Array<number>>([])
   const [getNewArr, setNewArr] = createSignal<Array<number>>([])
 
+  const [getLockAudio, setLockAudio] = createSignal<boolean>(true)
+  const [getBeginAudio, setBeginAudio] = createSignal<number>(0)
+
+
+  function getBegin(startTime, endTime, data) {
+    if (data.begin == 0) {
+      return startTime
+    } else {
+      return parseFloat(parseFloat(startTime + (endTime - startTime) * parseFloat(data.begin).toFixed(2)).toFixed(2))
+      //startOffset会存到本地,但是startTime不会,所以随便改
+    }
+  }
+
+  async function audioPlay(data) {
+    if (getLockAudio()) {
+      console.log('audioPlay', data.startTime, data.endTime, audioRef.currentTime)
+      let startTime = srtTime2second(data.startTime) / 1000
+      let endTime = srtTime2second(data.endTime) / 1000
+      console.log('a1', startTime, endTime, audioRef.currentTime)
+
+      startTime = getBegin(startTime, endTime, data)
+
+      startTime = (startTime + (!data.startOffset ? 0 : parseFloat(data.startOffset))).toFixed(2);
+      endTime = (endTime + (!data.endOffset ? 0 : parseFloat(data.endOffset))).toFixed(2);
+      console.log('b1', startTime, endTime, audioRef.currentTime)
+
+
+      try {
+        if (startTime > endTime) {
+          console.log(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          alert(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          return
+        }
+        console.log('c1', startTime, endTime, audioRef.currentTime)
+        audioRef.currentTime = startTime
+        await audioRef.play();
+      } catch (error) {
+        console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
+      }
+    } else {
+      try {
+        const promise = await audioRef.play();
+      } catch (error) {
+        console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
+      }
+    }
+  }
+  async function audioUpdate(data) {
+    if (getLockAudio()) {
+      console.log('audioUpdate', data.startTime, data.endTime, audioRef.currentTime)
+      let startTime = srtTime2second(data.startTime) / 1000
+      let endTime = srtTime2second(data.endTime) / 1000
+      console.log('a2', startTime, endTime, audioRef.currentTime)
+
+      startTime = getBegin(startTime, endTime, data)
+
+      console.log('b2', startTime, endTime, audioRef.currentTime)
+
+      startTime = parseFloat((startTime + (!data.startOffset ? 0 : parseFloat(data.startOffset))).toFixed(2))
+      endTime = parseFloat((endTime + (!data.endOffset ? 0 : parseFloat(data.endOffset))).toFixed(2))
+      console.log('c2', startTime, endTime, audioRef.currentTime)
+
+      try {
+        if (startTime > endTime) {
+          console.log(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          alert(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          return
+        }
+
+        if (audioRef.currentTime < startTime) {
+          console.log('d2', startTime, endTime, audioRef.currentTime)
+          audioRef.currentTime = startTime
+          await audioRef.play();
+        }
+        if (audioRef.currentTime > endTime) {
+          console.log('e2', startTime, endTime, audioRef.currentTime)
+          audioRef.currentTime = startTime
+          await audioRef.play();
+          // await audioRef.pause();
+        }
+      } catch (error) {
+        console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
+      }
+    } else {
+      try {
+        const promise = await audioRef.play();
+      } catch (error) {
+        console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
+      }
+    }
+  }
 
   function audioEvent(data, ref) {
     // const target = event.target
@@ -114,7 +211,15 @@ function App() {
     // target.play()
     // console.log(target.played())
   }
-
+  function srtTime2second(time) {
+    //返回毫秒
+    let _ = time.split(',')[0].split(':')
+    let hour = parseInt(_[0]) * 60 * 60 * 1000
+    let minute = parseInt(_[1]) * 60 * 1000
+    let second = parseInt(_[2]) * 1000
+    let millisecond = parseInt(time.split(',')[1])
+    return hour + minute + second + millisecond
+  }
   function reSetIndex(fileData) {
     const { waitArr, oldArr, newArr } = reSetArr(fileData)
 
@@ -297,9 +402,8 @@ function App() {
           setIsLoad(true)
           setMediaArr(mediaArr)
 
-          console.log(audioRef, 23333333)
-          // audioRef.muted = true; // without this line it's not working although I have "muted" in HTML
-          audioRef.play()
+          // playAudio()
+          // audioRef.play()//浏览器对于自动播放有限制 https://developer.chrome.com/blog/autoplay/
         }
         if (file.name == 'revlog.csv') {
           const text = await file.text()
@@ -470,15 +574,85 @@ function App() {
             <div class="text-child">
               <div>
                 <div>
-
-                  <audio ref={audioRef} src={getAudio()} controls onLoadedMetaData={[audioEvent, {
-                    startTime: getFileData()?.card?.[getIndex()]?.start,
-                    endTime: getFileData()?.card?.[getIndex()]?.end,
-                  }]} >
-                    {/* <source id="myAudio" type="audio/mp3" >
-                    </source> */}
+                  <audio ref={audioRef} controls
+                    // onLoadedMetaData={
+                    //   [playAudio, {
+                    //     startTime: getFileData()?.card?.[getIndex()]?.start,
+                    //     endTime: getFileData()?.card?.[getIndex()]?.end,
+                    //   }]
+                    // }
+                    onTimeUpdate={
+                      [audioUpdate, {
+                        startTime: getFileData()?.card?.[getIndex()]?.start,
+                        endTime: getFileData()?.card?.[getIndex()]?.end,
+                        startOffset: getFileData()?.card?.[getIndex()]?.startOffset,
+                        endOffset: getFileData()?.card?.[getIndex()]?.endOffset,
+                        begin: getBeginAudio()
+                      }]
+                    }
+                  >
+                    <source id="myAudio" src={getAudio()} type="audio/mp3" ></source>
                   </audio>
                 </div>
+                <div>
+                  <button onclick={
+                    [audioPlay, {
+                      startTime: getFileData()?.card?.[getIndex()]?.start,
+                      endTime: getFileData()?.card?.[getIndex()]?.end,
+                      startOffset: getFileData()?.card?.[getIndex()]?.startOffset,
+                      endOffset: getFileData()?.card?.[getIndex()]?.endOffset,
+                      begin: getBeginAudio()
+                    }]
+                  }>play</button>
+
+                  <label > lock</label>
+                  <input type="checkbox" checked={getLockAudio()} onclick={() => {
+                    setLockAudio(!getLockAudio())
+                  }} />
+
+                  <label > startOffset</label>
+                  <input ref={startOffsetRef} class='offset' type="number" step="0.1" value={
+                    !getFileData()?.card?.[getIndex()]?.startOffset ? 0 : getFileData()?.card?.[getIndex()]?.startOffset
+                  } onInput={(e) => {
+                    setFileData((i) => {
+                      if (e.target.value == 0) {
+                        delete i.card[getIndex()].startOffset
+                      } else {
+                        i.card[getIndex()].startOffset = e.target.value
+                      }
+                      return { ...i }
+                    })
+                    startOffsetRef.focus()
+                  }} />
+                  <span>(s) </span>
+                  <label > endOffset</label>
+                  <input ref={endOffsetRef} class='offset' type="number" step="0.1" value={
+                    !getFileData()?.card?.[getIndex()]?.endOffset ? 0 : getFileData()?.card?.[getIndex()]?.endOffset
+                  } onInput={(e) => {
+                    console.log(e.target.value)
+                    setFileData((i) => {
+                      if (e.target.value == 0) {
+                        delete i.card[getIndex()].endOffset
+                      } else {
+                        i.card[getIndex()].endOffset = e.target.value
+                      }
+                      return { ...i }
+                    })
+                    endOffsetRef.focus()
+                  }} />
+                  <span>(s)</span>
+                  <label > begin</label>
+                  <input ref={beginRef} class='offset' type="number" step="0.1" min="0" max="1" value={getBeginAudio()} onInput={(e) => {
+                    console.log(e.target.value)
+                    if (parseFloat(e.target.value) > 1) {
+                      e.target.value = "0." + parseFloat(e.target.value)
+                    }
+                    setBeginAudio(parseFloat(e.target.value))
+                    beginRef.focus()
+                  }} />
+                  <span>(%)</span>
+                </div>
+
                 <br />
                 {getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.['en']}
                 <br />
@@ -523,6 +697,7 @@ function App() {
               })
               setIndex(i)
             }
+            setBeginAudio(0)
           }}>
             {getRating()[1] ? getRating()[1] : 'rating1'}
           </button>
@@ -539,6 +714,7 @@ function App() {
               })
               setIndex(i)
             }
+            setBeginAudio(0)
           }}>
             {getRating()[2] ? getRating()[2] : 'rating2'}
           </button>
@@ -555,6 +731,7 @@ function App() {
               })
               setIndex(i)
             }
+            setBeginAudio(0)
           }}>
             {getRating()[3] ? getRating()[3] : 'rating3'}
           </button>
@@ -571,6 +748,7 @@ function App() {
               })
               setIndex(i)
             }
+            setBeginAudio(0)
           }}>
             {getRating()[4] ? getRating()[4] : 'rating4'}
           </button>

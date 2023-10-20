@@ -26,9 +26,14 @@
 
 .text-child {
   position: relative;
-  top: 4vh;
+  top: 2rem;
 }
 
 .wait {
   color: red;
+}
+
+.offset {
+  /* height: 1rem; */
+  width: 3rem;
 }

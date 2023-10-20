@@ -20,6 +20,7 @@
   * https://colab.research.google.com/github/open-spaced-repetition/fsrs4anki/blob/main/fsrs4anki_optimizer.ipynb
   * https://github.com/open-spaced-repetition/fsrs-optimizer/issues/13
   * https://github.com/open-spaced-repetition/fsrs-optimizer/issues/36
+  * https://github.com/siyuan-note/siyuan/issues/9309
   * 日志按如下格式就行了
     ```csv
     card_id,review_time,review_rating,review_state,review_duration
@@ -37,6 +38,6 @@
   * 把快捷键功能写好
   * 把自定义模版功能写好
   * 测试一下和anki的fsrs间隔是否一致
-  * 浏览器对于自动播放音频支持的很糟糕,用RN重构吧
+  * 浏览器对于自动播放音频限制
     * https://developer.chrome.com/blog/autoplay/
   * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留
