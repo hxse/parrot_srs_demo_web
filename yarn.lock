@@ -718,6 +718,14 @@ fsrs.js@^1.1.1:
   resolved "https://registry.npmmirror.com/fsrs.js/-/fsrs.js-1.1.1.tgz"
   integrity sha512-qYHR6v2ngL2IxO1663VZBf1bFQ82Qh1B0Xf+HM2HQ6/xeC3tdGIiw/ZBfKnjTdlJgBxq9m/ozcmfc/8T1ZgFlQ==
 
+gamepad.js@^2.1.0:
+  version "2.1.0"
+  resolved "https://registry.npmmirror.com/gamepad.js/-/gamepad.js-2.1.0.tgz#20b651f2b861653f2df9c862615eb0f397960a6c"
+  integrity sha512-DmOuDwT4nYH7+whhtZOTdNTXq3AFL8n2YZCoa10AkKHBa8Dh28dUTQudH0fH8kJAbOZbcYkyiFWp6x7HroT5IA==
+  dependencies:
+    option-resolver.js "^1.1.0"
+    tom32i-event-emitter.js "^2.0.5"
+
 gensync@^1.0.0-beta.2:
   version "1.0.0-beta.2"
   resolved "https://registry.npmmirror.com/gensync/-/gensync-1.0.0-beta.2.tgz"
@@ -932,6 +940,11 @@ once@^1.3.0:
   dependencies:
     wrappy "1"
 
+option-resolver.js@^1.1.0:
+  version "1.1.0"
+  resolved "https://registry.npmmirror.com/option-resolver.js/-/option-resolver.js-1.1.0.tgz#d24e8890b9d049056e9cc33b5232ecd4b6e4f0fb"
+  integrity sha512-gckuegIqAloPysPLK/mN3S88IcKfvPbSZntfpyqThbCKoPDmcC5kVM/2qpXglhrpab7GdWdd63XrttzTSMHUiw==
+
 p-limit@^2.2.0:
   version "2.3.0"
   resolved "https://registry.npmmirror.com/p-limit/-/p-limit-2.3.0.tgz#3dd33c647a214fdfffd835933eb086da0dc21db1"
@@ -1096,6 +1109,11 @@ to-fast-properties@^2.0.0:
   version "2.0.0"
   resolved "https://registry.npmmirror.com/to-fast-properties/-/to-fast-properties-2.0.0.tgz"
   integrity sha512-/OaKK0xYrs3DmxRYqL/yDc+FxFUVYhDlXMhRmv3z915w2HF1tnN1omB354j8VUGO/hbRzyD6Y3sA7v7GS/ceog==
+
+tom32i-event-emitter.js@^2.0.5:
+  version "2.0.5"
+  resolved "https://registry.npmmirror.com/tom32i-event-emitter.js/-/tom32i-event-emitter.js-2.0.5.tgz#b013d5a9f67d0ce2e370b353b55688c2041265f2"
+  integrity sha512-7wYTrHfV3gWRZXZQniMLOO5hh01szsTVulTWwcNheESvRUrveQCKKEz2YMceYQZdfpmXMC8PGpzOpUcnfXSXiw==
 
 trim-repeated@^1.0.0:
   version "1.0.0"

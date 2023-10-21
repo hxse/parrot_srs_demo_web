@@ -38,7 +38,8 @@
 # todo
   * 用Legend-State重构
     * https://www.legendapp.com/open-source/state/intro/introduction/
-  * 支持手柄
+  * 支持手柄,安卓浏览器不行 https://hardwaretester.com/gamepad
+  * pwa意义不大,vite有点难搞 https://vite-pwa-org.netlify.app/frameworks/solidjs
   * 支持撤回和暂停
   * 支持自定义模版
   * 测试一下和anki的fsrs间隔是否一致

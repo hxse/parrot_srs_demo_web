@@ -10,6 +10,7 @@ import { initFsrs, newCard, schedulingCard, parseFsrsObj } from "./fsrs-api.ts"
 import { createZip, createFile } from './convert-zip.ts'
 import jsZip from 'jszip'
 import { dateTimeDiff } from "date-differencer";
+import { init_keyboard } from './keyboard.ts'
 
 function sameDay(date1: Date, date2: Date) {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -387,6 +388,8 @@ function App() {
     //   });
     // }
 
+    init_keyboard()
+
     const idb = await createIdb()
     setIdb(idb)
 
@@ -757,7 +760,7 @@ function App() {
         <br />
 
         <Show when={getIndex() !== undefined}>
-          <button onClick={() => {
+          <button id="rating1" onClick={() => {
             if (getIndex() === undefined) return
 
             showRating(1, true)
@@ -774,7 +777,7 @@ function App() {
           }}>
             {getRating()[1] ? getRating()[1] : 'rating1'}
           </button>
-          <button onClick={() => {
+          <button id="rating2" onClick={() => {
             if (getIndex() === undefined) return
 
             showRating(2, true)
@@ -791,7 +794,7 @@ function App() {
           }}>
             {getRating()[2] ? getRating()[2] : 'rating2'}
           </button>
-          <button onClick={() => {
+          <button id="rating3" onClick={() => {
             if (getIndex() === undefined) return
 
             showRating(3, true)
@@ -808,7 +811,7 @@ function App() {
           }}>
             {getRating()[3] ? getRating()[3] : 'rating3'}
           </button>
-          <button onClick={() => {
+          <button id="rating4" onClick={() => {
             if (getIndex() === undefined) return
 
             showRating(4, true)
