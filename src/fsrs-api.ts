@@ -1,11 +1,12 @@
-import { State, Rating, ReviewLog, Card, SchedulingInfo, SchedulingCards, Params, FSRS } from "fsrs.js"
+import { Rating, Card, SchedulingInfo, FSRS } from "fsrs.js"
+// import { State, ReviewLog,   SchedulingCards, Params } from "fsrs.js"
+
 let fsrs = new FSRS;
 
 let rating = Rating;
-let state = State;
 
 
-export function initFsrs(w, request_retention) {
+export function initFsrs(w: number[] | undefined, request_retention: number) {
     // w=[0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61]
     if (w) {
         fsrs.p.w = w
@@ -22,7 +23,7 @@ export function newCard() {
     return new Card;
 }
 
-export function schedulingCard(card, test = false) {
+export function schedulingCard(card: any, test = false) {
     let now
     if (test) {
         now = new Date(card.due);
@@ -66,8 +67,8 @@ export function repeatCard(scheduling_cards: Record<number, SchedulingInfo>, num
     return { card, due, state, review_log }
 }
 
-export function parseFsrsObj(text) {
-    function dateTimeReviver(key, value) {
+export function parseFsrsObj(text: string) {
+    function dateTimeReviver(key: string, value: any) {
         if (key == "due" || key == "last_review") {
             return new Date(value);
         }
@@ -78,7 +79,7 @@ export function parseFsrsObj(text) {
 
 }
 
-export function getLog() {
-    review_log = scheduling_cards[rating.Good].review_log
+// export function getLog() {
+//     review_log = scheduling_cards[rating.Good].review_log
 
-}
+// }

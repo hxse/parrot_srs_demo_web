@@ -1,15 +1,14 @@
 import {
-    showDirectoryPicker,
-    showOpenFilePicker,
     showSaveFilePicker,
     getOriginPrivateDirectory
 } from 'native-file-system-adapter'
 import indexedDbAdapter from 'native-file-system-adapter/src/adapters/indexeddb.js'
-import { compatibleZip } from './convert-zip'
+import { getFile } from './pick_file'
+
 
 const dirHandle = await getOriginPrivateDirectory(indexedDbAdapter)
 
-export async function saveFileSystem(mode = 'indexeddb', key, value) {
+export async function saveFileSystem(mode = 'indexeddb', key: string, value: any) {
     if (mode == 'indexeddb') {
         const fileHandle = await dirHandle.getFileHandle(key, { create: true })
         const writable = await fileHandle.createWritable()
@@ -22,6 +21,7 @@ export async function readFileSystem(mode = 'indexeddb') {
     if (mode == 'indexeddb') {
         for await (const [key, value] of dirHandle.entries()) {
             const file = await getFile(value)
+            console.log(key, file)
             // downloadBlob(file, file.name)
         }
     }
@@ -31,6 +31,7 @@ export async function deleteFileSystem(mode = 'indexeddb') {
     if (mode == 'indexeddb') {
         for await (const [key, value] of dirHandle.entries()) {
             value.remove()
+            console.log(key)
         }
     }
 }
@@ -72,28 +73,14 @@ export const pickerOptsDir = {
 };
 
 
-export async function openFile() {
-    const [fileHandle] = await showOpenFilePicker(pickerOptsFile);
-    return fileHandle
-}
 
-export async function openDir() {
-    const dirHandle = await showDirectoryPicker(pickerOptsDir);
-    return dirHandle
-}
-
-export async function getFile(fileHandle) {
-    const fileData = await fileHandle.getFile();
-    return fileData
-}
-
-export async function saveFile(fileHandle, text) {
+export async function saveFile(fileHandle: any, text: any) {
     const writableStream = await fileHandle.createWritable();
     await writableStream.write(text);
     await writableStream.close();
 }
 
-export async function downloadFile(data) {
+export async function downloadFile(data: any) {
     const fileHandle = await showSaveFilePicker(pickerOptsFile);
     const writableStream = await fileHandle.createWritable();
     await writableStream.write(data);
@@ -101,52 +88,8 @@ export async function downloadFile(data) {
 }
 
 
-export async function parseDir(dirHandle, mode) {
-    const fileArr = []
-    const mediaArr = []
-    const dirArr = []
-    if (mode == 'zip') {
-        let obj = dirHandle
-        for (let key of Object.keys(obj)) {
-            let value = obj[key]
-            if (!value.dir) {
-                if (key.indexOf('media/') != -1) {
-                    mediaArr.push(value)
-                } else {
-                    fileArr.push(value)
-                }
-            } else {
-                dirArr.push(value)
-            }
-        }
-        for (const fileHandle of [...fileArr, ...mediaArr]) {
-            await compatibleZip(fileHandle)
-        }
-    }
-    if (mode == 'dir') {
-        for await (const [key, value] of dirHandle.entries()) {
-            if (value.kind == 'file') {
-                fileArr.push(value)
-            }
-            if (value.kind == 'directory') {
-                if (['media'].indexOf(key) != -1) {
-                    for await (const [k, v] of value.entries()) {
-                        mediaArr.push(v)
-                    }
-                    dirArr.push(value)
-                }
-            }
-        }
-    }
-    return { fileArr: fileArr, mediaArr: mediaArr, dirArr: dirArr }
-}
 
-
-export function downloadBlob(blob, name = 'file.txt') {
-    if (
-        window.navigator &&
-        window.navigator.msSaveOrOpenBlob
-    ) return window.navigator.msSaveOrOpenBlob(blob);
+export function downloadBlob(blob: any, name = 'file.txt') {
 
     // For other browsers:
     // Create a link pointing to the ObjectURL containing the blob.

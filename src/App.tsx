@@ -1,52 +1,50 @@
-import { createSignal, createEffect, on, Show, batch, onMount, For, Switch, Match } from 'solid-js'
+import { createSignal, createEffect, on, Show, batch, onMount, For } from 'solid-js'
 
-import solidLogo from './assets/solid.svg'
-import viteLogo from '/vite.svg'
 import './App.css'
-import { openFile, openDir, getFile, saveFile, downloadFile, saveFileSystem, readFilSystem, deleteFileSystem, parseDir, downloadBlob } from "./file_io.ts"
-import { saveIndexeddb, store } from './idb_io.ts'
-import { initFsrs, newCard, schedulingCard, repeatCard, parseFsrsObj } from "./fsrs-api.ts"
-import { createZip, compatibleZip, createFile } from './convert-zip.ts'
-import jsZip from 'jszip'
-import {
-  dateDiff, dateTimeDiff, dayDiff, dayTimeDiff,
-  addDateTimeDiff, addDayTimeDiff
-} from "date-differencer";
 
-function sameDay(date1, date2) {
+import { openFile, openDir, getFile, parseDir } from "./pick_file.ts"
+import { store, createIdb } from './idb_io.ts'
+
+import { initFsrs, newCard, schedulingCard, parseFsrsObj } from "./fsrs-api.ts"
+
+import { createZip, createFile } from './convert-zip.ts'
+import jsZip from 'jszip'
+import { dateTimeDiff } from "date-differencer";
+
+function sameDay(date1: Date, date2: Date) {
   return date1.getFullYear() === date2.getFullYear() &&
     date1.getMonth() === date2.getMonth() &&
     date1.getDate() === date2.getDate()
 }
 
-function datediff(first, second) {
+function datediff(first: Date, second: Date) {
   first.setSeconds(first.getSeconds() - 3);//error
   const diff = dateTimeDiff(first, second)
   return diff.years > 0 ? diff.years + 'Y' : diff.months > 0 ? diff.months + 'M' : diff.days > 0 ? diff.days + 'D' : diff.minutes + 'm'
 }
 
-function createCardId(card, length = 7) {
+function createCardId(card: any, length = 7) {
   if (!card.card_id) {
-    const randomStr = Array(length).fill(0).map(x => Math.random().toString(36).charAt(2)).join('')
+    const randomStr = Array(length).fill(0).map(() => Math.random().toString(36).charAt(2)).join('')
     const d = new Date()
-    const dateStr = d.getFullYear() + String(d.getMonth() + 1).padStart(2, 0) + String(d.getDate()).padStart(2, 0) + String(d.getHours()).padStart(2, 0) + String(d.getMinutes()).padStart(2, 0) + String(d.getSeconds()).padStart(2, 0)
+    const dateStr = d.getFullYear() + String(d.getMonth() + 1).padStart(2, "0") + String(d.getDate()).padStart(2, "0") + String(d.getHours()).padStart(2, "0") + String(d.getMinutes()).padStart(2, "0") + String(d.getSeconds()).padStart(2, "0")
     card.card_id = `${dateStr}-${randomStr}`
   }
   return card.card_id
 }
 
-function preProcessing(obj) {
-  obj.name = obj.name.replace(' ', '_')
+function preProcessing(obj: any) {
+  obj.name = obj.name.replaceAll(' ', '_')
   if (!obj.index) {
     obj.index = 0
   }
 }
 
-function getCacheName(file, obj) {
+function getCacheName(file: any, obj: any) {
   return `${obj.name} ${file.name}`
 }
 
-function reSetArr(fileData) {
+function reSetArr(fileData: any) {
   const waitArr = []//已过期的旧卡
   const oldArr = []//未过期的旧卡
   const newArr = []//未学过的新卡
@@ -81,8 +79,9 @@ function reSetArr(fileData) {
   }
 }
 
-async function cleanUserData(fileObj, fk) {
-  const [deck_name, name] = [fk.split(' ').slice(0, 1).join(' '), fk.split(' ').slice(1).join(' ')]
+async function cleanUserData(fileObj: any, fk: string) {
+  const [deck_name, name] = [fk.split(' ').slice(0, -1).join(' '), fk.split(' ').slice(-1).join(' ')]
+  deck_name
   if (name == "config.json") {
     const text = await fileObj.text()
     const obj = parseFsrsObj(text);
@@ -99,52 +98,58 @@ async function cleanUserData(fileObj, fk) {
   return fileObj
 }
 
-let audioRef
-let beginRef
-let startOffsetRef
-let endOffsetRef
-let logRef
+let audioRef: any
+let beginRef: any
+let startOffsetRef: any
+let endOffsetRef: any
+let logRef: any
+
 function App() {
   //test参数是用来测试的
-  const [getTestDate, setTestDate] = createSignal<boolean>(false)
-  const [getTestPreview, setTestPreview] = createSignal<boolean>(false)
+  const [getTestDate,] = createSignal<boolean>(false)
+  const [getTestPreview,] = createSignal<boolean>(false)
 
-  const [getIndex, setIndex] = createSignal<number>(null)
+  const [getIdb, setIdb] = createSignal<any>()
+  // const [getIdb, setIdb] = createSignal<any>()
+
+  const [getIndex, setIndex] = createSignal<number | undefined>(undefined)
   const [getIsLoad, setIsLoad] = createSignal(false)
   const [getFileData, setFileData] = createSignal<any>({})
-  const [getFileObj, setFileObj] = createSignal<any>({})
+  // const [getFileObj, setFileObj] = createSignal<any>({})
   const [getRating, setRating] = createSignal<any>({})
   const [getMediaArr, setMediaArr] = createSignal<any>([])
 
-  const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>(['card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'])
+  const csvField = 'card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'
+  const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>([])
   //https://github.com/open-spaced-repetition/fsrs-optimizer
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
 
-  const [getLimit, setLimit] = createSignal<number>(15)
+  const [getLimit,] = createSignal<number>(15)
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
 
-  const [getStartOffset, setStartOffset] = createSignal<number>(0)
-  const [getEndOffset, setEndOffset] = createSignal<number>(0)
+  // const [getStartOffset, setStartOffset] = createSignal<number>(0)
+  // const [getEndOffset, setEndOffset] = createSignal<number>(0)
 
-  const [getWaitArr, setWaitArr] = createSignal<Array<number>>([])
-  const [getOldArr, setOldArr] = createSignal<Array<number>>([])
-  const [getNewArr, setNewArr] = createSignal<Array<number>>([])
+  // const [getWaitArr, setWaitArr] = createSignal<Array<number>>([])
+  // const [getOldArr, setOldArr] = createSignal<Array<number>>([])
+  // const [getNewArr, setNewArr] = createSignal<Array<number>>([])
 
   const [getLockAudio, setLockAudio] = createSignal<boolean>(true)
   const [getBeginAudio, setBeginAudio] = createSignal<number>(0)
 
 
-  function getBegin(startTime, endTime, data) {
+  function getBegin(startTime: any, endTime: any, data: any) {
     if (data.begin == 0) {
       return startTime
     } else {
-      return parseFloat(parseFloat(startTime + (endTime - startTime) * parseFloat(data.begin).toFixed(2)).toFixed(2))
+      const b = parseFloat(parseFloat(data.begin).toFixed(2))
+      return parseFloat(parseFloat(startTime + (endTime - startTime) * b).toFixed(2))
       //startOffset会存到本地,但是startTime不会,所以随便改
     }
   }
 
-  async function audioPlay(data) {
+  async function audioPlay(data: any) {
     if (getLockAudio()) {
       console.log('audioPlay', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
@@ -163,7 +168,6 @@ function App() {
         if (startTime > endTime) {
           console.log(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
           alert(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
-          debugger
           return
         }
         console.log('d1', startTime, endTime, audioRef.currentTime)
@@ -174,13 +178,13 @@ function App() {
       }
     } else {
       try {
-        const promise = await audioRef.play();
+        await audioRef.play();
       } catch (error) {
         console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
       }
     }
   }
-  async function audioUpdate(data) {
+  async function audioUpdate(data: any) {
     if (getLockAudio()) {
       console.log('audioUpdate', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
@@ -216,21 +220,14 @@ function App() {
       }
     } else {
       try {
-        const promise = await audioRef.play();
+        await audioRef.play();
       } catch (error) {
         console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
       }
     }
   }
 
-  function audioEvent(data, ref) {
-    // const target = event.target
-    // console.log(target.currentTime, data);
-    // target.currentTime = 30
-    // target.play()
-    // console.log(target.played())
-  }
-  function srtTime2second(time) {
+  function srtTime2second(time: string) {
     //返回毫秒
     let _ = time.split(',')[0].split(':')
     let hour = parseInt(_[0]) * 60 * 60 * 1000
@@ -239,7 +236,8 @@ function App() {
     let millisecond = parseInt(time.split(',')[1])
     return hour + minute + second + millisecond
   }
-  function reSetIndex(fileData) {
+
+  function reSetIndex(fileData: any) {
     const { waitArr, oldArr, newArr } = reSetArr(fileData)
 
     console.log('waitArr', waitArr)
@@ -266,11 +264,10 @@ function App() {
       console.log('show', newArr[0])
       return newArr[0]
     }
-
   }
 
   function getAudio() {
-    const audioArr = getMediaArr().filter((i) => i.name.endsWith('.ogg'))
+    const audioArr = getMediaArr().filter((i: any) => i.name.endsWith('.ogg'))
     if (audioArr.length > 0) {
       return URL.createObjectURL(audioArr[0])
     }
@@ -288,21 +285,21 @@ function App() {
     }
   }
 
-  async function readDir(dirHandle, mode) {
-    const { fileArr, mediaArr, dirArr } = await parseDir(dirHandle, mode)
+  async function readDir(dirHandle: any, mode: string) {
+    const { fileArr, mediaArr } = await parseDir(dirHandle, mode)
 
     let obj: any
 
     async function updateIdb() {
-      await store('clear', { storeName: 'file' })
-      await store('clear', { storeName: 'media' })
+      await store(getIdb(), 'clear', { storeName: 'file' })
+      await store(getIdb(), 'clear', { storeName: 'media' })
       for (const fileHandle of fileArr) {
         const file = await getFile(fileHandle)
-        await store('put', { storeName: 'file', value: file, key: getCacheName(fileHandle, obj) })
+        await store(getIdb(), 'put', { storeName: 'file', value: file, key: getCacheName(fileHandle, obj) })
       }
       for (const fileHandle of mediaArr) {
         const file = await getFile(fileHandle)
-        await store('put', { storeName: 'media', value: file, key: getCacheName(fileHandle, obj) })
+        await store(getIdb(), 'put', { storeName: 'media', value: file, key: getCacheName(fileHandle, obj) })
       }
     }
 
@@ -318,7 +315,7 @@ function App() {
         batch(async () => {
           setIsLoad(true)
           setFileData(obj)
-          setFileObj(file)
+          // setFileObj(file)
           if (getTestPreview()) {
             setIndex(obj.index)
           } else {
@@ -335,7 +332,9 @@ function App() {
       if (fileHandle.name == 'revlog.csv') {
         const file = await getFile(fileHandle)
         const text = await file.text()
-        setLogsCsv(text.split('\n'))
+        const logArr = text.split('\n').filter((i: string) => i.trim())
+        setLogsCsv(logArr.length > 0 ? logArr : [csvField])
+
       }
     }
     if (!flag) {
@@ -345,63 +344,64 @@ function App() {
     }
   }
 
-  async function runSaveFile(no_data) {
-    const fileKeys = await store('getAllKeys', { storeName: 'file' })
-    const mediaKeys = await store('getAllKeys', { storeName: 'media' })
+  async function runSaveFile(no_data: boolean) {
+    const fileKeys = await store(getIdb(), 'getAllKeys', { storeName: 'file' })
+    const mediaKeys = await store(getIdb(), 'getAllKeys', { storeName: 'media' })
     const fileArr = []
     const mediaArr = []
     for (let fk of fileKeys) {
-      let fileObj = await store('get', { storeName: 'file', key: fk })
+      let fileObj = await store(getIdb(), 'get', { storeName: 'file', key: fk })
       if (no_data) {
         fileObj = await cleanUserData(fileObj, fk)
       }
       fileArr.push(fileObj)
     }
     for (let mk of mediaKeys) {
-      const fileObj = await store('get', { storeName: 'media', key: mk })
+      const fileObj = await store(getIdb(), 'get', { storeName: 'media', key: mk })
       mediaArr.push(fileObj)
     }
-
-    createZip('world.zip', fileArr, mediaArr)
-  }
-
-  async function runDownloadFile(text: string) {
-    const str = JSON.stringify(text, null, 4)
-    await downloadFile(str)
+    for (const file of fileArr) {
+      if (file.name == "config.json") {
+        const text = await file.text()
+        const obj = parseFsrsObj(text);
+        createZip(obj['name_zip'] ? obj['name_zip'] : "demo.zip", fileArr, mediaArr)
+      }
+    }
   }
 
 
   onMount(async () => {
     //todo 这里要读一下indexeddb缓存
-    if (navigator.storage && navigator.storage.persist) {
-      navigator.storage.persisted().then((persistent) => {
-        if (persistent) {
-          console.log("Storage will not be cleared except by explicit user action");
-        } else {
-          console.log("Storage may be cleared by the UA under storage pressure.");
-        }
-      });
-    }
+    // if (navigator.storage && navigator.storage.persist) {
+    //   navigator.storage.persisted().then((persistent) => {
+    //     if (persistent) {
+    //       console.log("Storage will not be cleared except by explicit user action");
+    //     } else {
+    //       console.log("Storage may be cleared by the UA under storage pressure.");
+    //     }
+    //   });
+    // }
+
+    const idb = await createIdb()
+    setIdb(idb)
 
     initFsrs(undefined, 0.9)
 
-    // await store('load')
-    // readFileSystem('indexeddb')
 
-    const res = await store('getAllKeys', { storeName: 'file' })
-    const fileArr = []
+    const res = await store(getIdb(), 'getAllKeys', { storeName: 'file' })
+    const fileArr: any[] = []
     for (const i of res) {
       // const [deck_name, name] = [fullName.split(' ').slice(0, 1).join(' '), fullName.split(' ').slice(1).join(' ')]
-      const file = await store('get', { storeName: 'file', key: i })
+      const file = await store(getIdb(), 'get', { storeName: 'file', key: i })
       fileArr.push(file)
     }
     console.log('use cache fileArr', fileArr)
 
-    const res2 = await store('getAllKeys', { storeName: 'media' })
-    const mediaArr = []
+    const res2 = await store(getIdb(), 'getAllKeys', { storeName: 'media' })
+    const mediaArr: any[] = []
     for (const i of res2) {
       // const [deck_name, name] = [fullName.split(' ').slice(0, 1).join(' '), fullName.split(' ').slice(1).join(' ')]
-      const file = await store('get', { storeName: 'media', key: i })
+      const file = await store(getIdb(), 'get', { storeName: 'media', key: i })
       mediaArr.push(file)
     }
     console.log('use cache mediaArr', mediaArr)
@@ -413,7 +413,7 @@ function App() {
           const text = await file.text()
           const obj = parseFsrsObj(text);
           setIsCacheFile(true)
-          setFileObj(file)
+          // setFileObj(file)
           setFileData(obj)
           if (getTestPreview()) {
             setIndex(obj.index)
@@ -429,7 +429,8 @@ function App() {
         if (file.name == 'revlog.csv') {
           const text = await file.text()
           setIsCacheLog(true)
-          setLogsCsv(text.split('\n'))
+          const logArr = text.split('\n').filter((i: string) => i.trim())
+          setLogsCsv(logArr.length > 0 ? logArr : [csvField])
           logRef.scrollTop = logRef.scrollHeight;
         }
       }
@@ -437,8 +438,8 @@ function App() {
 
   });
 
-  createEffect(on(getIndex, (index: string) => {
-    if (index !== null) {
+  createEffect(on(getIndex, (index) => {
+    if (index !== undefined) {
       setFileData((i) => {
         if (i.index == index) {
           return i
@@ -446,33 +447,30 @@ function App() {
         i.index = index
         return { ...i }
       })
-      showRating()
+      showRating(-1, false)
     }
   }, { defer: false }));
 
-  createEffect(on(getFileData, async (data: string) => {
+  createEffect(on(getFileData, async () => {
     if (getIsCacheFile()) {
       console.log('load: cache getFileData')
       setIsCacheFile(false)
       return
     }
     if (getFileData().name) {
-      // const file = getFileObj()
-      // const file = await store('get', { storeName: "file", key: getCacheName({ 'name': 'config.json' }, obj) })
       const file = { 'name': "config.json" }//这个最简单直接,不然太麻烦了
       const obj = getFileData()
-      obj.hello = "world"
 
       const str = JSON.stringify(obj, null, 4)
       const newFile = createFile(str, file.name)
-      await store('put', { storeName: "file", value: newFile, key: getCacheName(file, obj) })
+      await store(getIdb(), 'put', { storeName: "file", value: newFile, key: getCacheName(file, obj) })
       console.log('change: fileData', getFileData())
     } else {
       console.log('init: fileData', getFileData())
     }
   }, { defer: true }));
 
-  createEffect(on(getLogsCsv, async (data: string) => {
+  createEffect(on(getLogsCsv, async () => {
     if (getIsCacheLog()) {
       console.log('cache: getLogsCsv')
       setIsCacheLog(false)
@@ -484,7 +482,7 @@ function App() {
       const str = obj.join('\n')
       const newFile = createFile(str, file.name)
       console.log('change: logsCsv', getFileData())
-      await store('put', { storeName: "file", value: newFile, key: getCacheName(file, getFileData()) })
+      await store(getIdb(), 'put', { storeName: "file", value: newFile, key: getCacheName(file, getFileData()) })
     } else {
       console.log('init: logsCsv', getFileData())
     }
@@ -515,7 +513,9 @@ function App() {
       scheduling_cards = schedulingCard(card, getTestDate())
 
       function updateLog() {
-
+        if (idx === null || idx === undefined) {
+          return
+        }
         const logObj = {
           card_id: createCardId(getFileData().card[idx]),
           review_time: review_log['review'].getTime(),
@@ -537,7 +537,7 @@ function App() {
     }
 
     for (let num of [1, 2, 3, 4]) {
-      const { card, review_log } = scheduling_cards[num]
+      const { card, } = scheduling_cards[num]
       const diff = datediff(new Date(), card.due)
       setRating((i) => {
         i[num] = diff
@@ -561,20 +561,23 @@ function App() {
         </button>
         <button onclick={() => {
           // runDownloadFile(fileData())
-          runSaveFile()
+          runSaveFile(false)
         }}>保存</button>
         <button onclick={() => {
           // runDownloadFile(fileData())
           runSaveFile(true)
         }}>保存不带数据</button>
         <button onclick={() => {
-          store('clear', { storeName: 'file' })
-          store('clear', { storeName: 'media' })
+          store(getIdb(), 'clear', { storeName: 'file' })
+          store(getIdb(), 'clear', { storeName: 'media' })
         }}>清理缓存</button>
 
         <Show when={getTestDate()}>
           <button onClick={() => {
             setIndex((index) => {
+              if (index === undefined || index === null) {
+                return index
+              }
               index = index - 1 < 0 ? 0 : index - 1
               return index
             })
@@ -583,6 +586,9 @@ function App() {
           </button>
           <button onClick={() => {
             setIndex((index) => {
+              if (index === undefined || index === null) {
+                return index
+              }
               index = index + 1 >= getFileData().card.length - 1 ? getFileData().card.length - 1 : index + 1
               return index
             })
@@ -611,28 +617,36 @@ function App() {
                     //   }]
                     // }
                     onTimeUpdate={
-                      [audioUpdate, {
-                        startTime: getFileData()?.card?.[getIndex()]?.start,
-                        endTime: getFileData()?.card?.[getIndex()]?.end,
-                        startOffset: getFileData()?.card?.[getIndex()]?.startOffset,
-                        endOffset: getFileData()?.card?.[getIndex()]?.endOffset,
-                        begin: getBeginAudio()
-                      }]
+                      () => {
+                        const idx = getIndex()
+                        audioUpdate(idx === undefined ? {} : {
+                          startTime: getFileData()?.card?.[idx]?.start,
+                          endTime: getFileData()?.card?.[idx]?.end,
+                          startOffset: getFileData()?.card?.[idx]?.startOffset,
+                          endOffset: getFileData()?.card?.[idx]?.endOffset,
+                          begin: getBeginAudio()
+                        })
+                      }
                     }
                   >
                     {/* <source id="myAudio" src={getAudio()} type="audio/mp3" ></source> */}
                   </audio>
                 </div>
                 <div>
-                  <button onclick={
-                    [audioPlay, {
-                      startTime: getFileData()?.card?.[getIndex()]?.start,
-                      endTime: getFileData()?.card?.[getIndex()]?.end,
-                      startOffset: getFileData()?.card?.[getIndex()]?.startOffset,
-                      endOffset: getFileData()?.card?.[getIndex()]?.endOffset,
-                      begin: getBeginAudio()
-                    }]
-                  }>play</button>
+                  <button
+                    onclick={
+                      () => {
+                        const idx = getIndex()
+                        audioPlay(idx === undefined ? {} : {
+                          startTime: getFileData()?.card?.[idx]?.start,
+                          endTime: getFileData()?.card?.[idx]?.end,
+                          startOffset: getFileData()?.card?.[idx]?.startOffset,
+                          endOffset: getFileData()?.card?.[idx]?.endOffset,
+                          begin: getBeginAudio()
+                        })
+                      }
+                    }
+                  >play</button>
 
                   <label > lock</label>
                   <input type="checkbox" checked={getLockAudio()} onclick={() => {
@@ -641,13 +655,23 @@ function App() {
 
                   <label > startOffset</label>
                   <input ref={startOffsetRef} class='offset' type="number" step="0.1" value={
-                    !getFileData()?.card?.[getIndex()]?.startOffset ? 0 : getFileData()?.card?.[getIndex()]?.startOffset
+                    (() => {
+                      const idx = getIndex()
+                      if (!idx) {
+                        return 0
+                      }
+                      return !getFileData()?.card?.[idx]?.startOffset ? 0 : getFileData()?.card?.[idx]?.startOffset
+                    })()
                   } onInput={(e) => {
                     setFileData((i) => {
-                      if (e.target.value == 0) {
-                        delete i.card[getIndex()].startOffset
+                      const idx = getIndex()
+                      if (idx == undefined) {
+                        return i
+                      }
+                      if (parseFloat(e.target.value) == 0) {
+                        delete i.card[idx].startOffset
                       } else {
-                        i.card[getIndex()].startOffset = e.target.value
+                        i.card[idx].startOffset = e.target.value
                       }
                       return { ...i }
                     })
@@ -656,24 +680,28 @@ function App() {
                   <span>(s) </span>
                   <label > endOffset</label>
                   <input ref={endOffsetRef} class='offset' type="number" step="0.1" value={
-                    !getFileData()?.card?.[getIndex()]?.endOffset ? 0 : getFileData()?.card?.[getIndex()]?.endOffset
+                    (() => {
+                      const idx = getIndex()
+                      if (!idx) {
+                        return 0
+                      }
+                      return !getFileData()?.card?.[idx]?.endOffset ? 0 : getFileData()?.card?.[idx]?.endOffset
+                    })()
                   } onInput={(e) => {
                     console.log(e.target.value)
                     setFileData((i) => {
-                      if (e.target.value == 0) {
-                        delete i.card[getIndex()].endOffset
+                      const idx = getIndex()
+                      if (idx == undefined) {
+                        return i
+                      }
+                      if (parseFloat(e.target.value) == 0) {
+                        delete i.card[idx].endOffset
                       } else {
-                        i.card[getIndex()].endOffset = e.target.value
+                        i.card[idx].endOffset = e.target.value
                       }
                       return { ...i }
                     })
                     endOffsetRef.focus()
-
-                    //要不然还是用另一个audio来播放吧,避免出现声音的延迟
-                    // let st = srtTime2second(getFileData()?.card?.[getIndex()]?.start) / 1000
-                    // let et = srtTime2second(getFileData()?.card?.[getIndex()]?.end) / 1000
-                    // audioRef.currentTime = et + parseFloat(getFileData()?.card?.[getIndex()]?.endOffset) - 1
-                    // audioRef.play()
                   }} />
                   <span>(s)</span>
                   <label > begin</label>
@@ -689,30 +717,29 @@ function App() {
                 </div>
 
                 <br />
-                {getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.['en']}
+                {
+                  (() => {
+                    const idx = getIndex()
+                    if (idx === undefined) {
+                      return 'today done'
+                    }
+                    return getFileData()?.card?.[idx]?.text?.['en']
+                  })()
+                }
                 <br />
                 <br />
-                {getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.['zh-cn']}
+                {
+                  (() => {
+                    const idx = getIndex()
+                    if (idx === undefined) {
+                      return 'today done'
+                    }
+                    return getFileData()?.card?.[idx]?.text?.['zh-cn']
+                  })()
+                }
                 <br />
               </div>
             </div>
-            {/*
-            <Switch fallback={'not find template'}>
-              <Match when={getTestDate()}>
-                <div>
-                  {
-                    getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.en
-                  }
-                </div>
-              </Match>
-              <Match when={!getTestDate()}>
-                <div>
-                  {
-                    getIndex() === undefined ? 'today done' : getFileData()?.card?.[getIndex()]?.text?.en
-                  }
-                </div>
-              </Match>
-            </Switch> */}
           </Show>
         </div>
 
@@ -791,7 +818,7 @@ function App() {
 
         <div ref={logRef} class='scroll'>
           <For each={getLogsCsv()}>
-            {(log, i) => (
+            {(log) => (
               <div >
                 {log}
               </div>

@@ -1,50 +1,53 @@
 
 import { openDB } from 'idb';
 
-export const idb1 = await openDB("db1", 4, {
-    upgrade(db) {
-        db.createObjectStore('file');
-        db.createObjectStore('media');
-    }
-})
+export async function createIdb() {
+    return await openDB("db1", 4, {
+        upgrade(db) {
+            db.createObjectStore('file');
+            db.createObjectStore('media');
+        }
+    })
+}
+// export const idb1 =
 
-export async function saveIndexeddb(mode, storeName, key, value) {
+export async function saveIndexeddb(idb: any, mode: string, storeName: string, key: string = '', value: any = undefined) {
     // example: saveIndexeddb('put', 'store1', "hello", "world")
     // example: saveIndexeddb('clear', 'store1')
     switch (mode) {
         case 'get':
-            return (await idb1).get(storeName, key);
+            return (await idb).get(storeName, key);
             break;
         case 'put':
-            return (await idb1).put(storeName, value, key);
+            return (await idb).put(storeName, value, key);
             break;
         case 'delete':
-            return (await idb1).delete(storeName, key);
+            return (await idb).delete(storeName, key);
             break;
         case 'clear':
-            return (await idb1).clear(storeName);
+            return (await idb).clear(storeName);
             break;
         case 'getAllKeys':
-            return (await idb1).getAllKeys(storeName);
+            return (await idb).getAllKeys(storeName);
             break;
         default:
             break;
     }
 }
 
-export async function store(mode, obj) {
+export async function store(idb: any, mode: string, obj: any) {
     // 写store主要是为了以后兼容多个接口, 比如兼容IndexedDB_API和restful api
     switch (mode) {
         case 'get':
-            return await saveIndexeddb('get', obj.storeName, obj.key)
+            return await saveIndexeddb(idb, 'get', obj.storeName, obj.key)
             break;
         case 'put':
-            return await saveIndexeddb('put', obj.storeName, obj.key, obj.value)
+            return await saveIndexeddb(idb, 'put', obj.storeName, obj.key, obj.value)
             break;
         case 'update':
             try {
                 console.log(obj)
-                const res = await saveIndexeddb('get', obj.storeName, obj.key)
+                const res = await saveIndexeddb(idb, 'get', obj.storeName, obj.key)
                 console.log('找到了数据库', res)
             } catch (error) {
                 console.log('没有找到数据库', error)
@@ -53,10 +56,10 @@ export async function store(mode, obj) {
         case 'delete':
             break;
         case 'clear':
-            return await saveIndexeddb('clear', obj.storeName)
+            return await saveIndexeddb(idb, 'clear', obj.storeName)
             break;
         case 'getAllKeys':
-            return await saveIndexeddb('getAllKeys', obj.storeName)
+            return await saveIndexeddb(idb, 'getAllKeys', obj.storeName)
             break;
         case 'load':
             break
