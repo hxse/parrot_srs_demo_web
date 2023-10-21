@@ -1,3 +1,5 @@
+# preview
+  * https://hxse.github.io/parrot_srs_demo_web
 # 目前还不能在安卓上选择本地文件,只能在pc端chrome上用
   * https://bugs.chromium.org/p/chromium/issues/detail?id=1011535
   * https://bugs.chromium.org/p/chromium/issues/detail?id=1354695
