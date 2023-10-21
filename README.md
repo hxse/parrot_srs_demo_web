@@ -38,10 +38,9 @@
 # todo
   * 用Legend-State重构
     * https://www.legendapp.com/open-source/state/intro/introduction/
-  * 把音频和文本加载写完
-  * 把按时间推送卡片写完
-  * 把快捷键功能写好
-  * 把自定义模版功能写好
+  * 支持手柄
+  * 支持撤回和暂停
+  * 支持自定义模版
   * 测试一下和anki的fsrs间隔是否一致
   * 浏览器对于自动播放音频限制
     * https://developer.chrome.com/blog/autoplay/
