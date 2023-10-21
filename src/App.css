@@ -37,3 +37,8 @@
   /* height: 1rem; */
   width: 3rem;
 }
+
+.warning {
+  background-color: #f44336;
+  color: white;
+}

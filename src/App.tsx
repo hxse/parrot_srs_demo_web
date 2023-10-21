@@ -128,6 +128,10 @@ function App() {
   const [getLimit,] = createSignal<number>(15)
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
 
+  const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
+
+
+
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
   // const [getEndOffset, setEndOffset] = createSignal<number>(0)
 
@@ -167,9 +171,10 @@ function App() {
       try {
         if (startTime > endTime) {
           console.log(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
-          alert(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          setIsWarning(true)
           return
         }
+        setIsWarning(false)
         console.log('d1', startTime, endTime, audioRef.currentTime)
         audioRef.currentTime = startTime
         await audioRef.play();
@@ -201,10 +206,10 @@ function App() {
       try {
         if (startTime > endTime) {
           console.log(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
-          alert(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          setIsWarning(true)
           return
         }
-
+        setIsWarning(false)
         if (audioRef.currentTime < startTime) {
           console.log('d2', startTime, endTime, audioRef.currentTime)
           audioRef.currentTime = startTime
@@ -715,6 +720,12 @@ function App() {
                   }} />
                   <span>(%)</span>
                 </div>
+
+                <Show
+                  when={getIsWarning()}
+                >
+                  <div class="warning">Warning: 时间戳偏移量调过头了............</div>
+                </Show>
 
                 <br />
                 {
