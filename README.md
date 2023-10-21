@@ -30,6 +30,11 @@
 # 框架问题
   * https://github.com/jimmywarting/native-file-system-adapter/issues/14
     * 目前不支持remove,所以用idb
+# 音频问题
+  * 使用mp3音频文件,时间戳会变的不够准确,使用ogg,flac,wav格式能保证时间戳准确,其中ogg格式大小最小,所以建议用ogg格式
+  * https://stackoverflow.com/questions/25468063/html5-audio-currenttime-attribute-inaccurate
+  * https://terrillthompson.com/624
+  * https://stackoverflow.com/questions/37768732/how-to-convert-mp3s-to-constant-bitrate-using-ffmpeg
 # todo
   * 用Legend-State重构
     * https://www.legendapp.com/open-source/state/intro/introduction/

@@ -79,8 +79,8 @@ function reSetArr(fileData) {
   return {
     waitArr, oldArr, newArr
   }
-
 }
+
 async function cleanUserData(fileObj, fk) {
   const [deck_name, name] = [fk.split(' ').slice(0, 1).join(' '), fk.split(' ').slice(1).join(' ')]
   if (name == "config.json") {
@@ -152,19 +152,21 @@ function App() {
       console.log('a1', startTime, endTime, audioRef.currentTime)
 
       startTime = getBegin(startTime, endTime, data)
-
-      startTime = (startTime + (!data.startOffset ? 0 : parseFloat(data.startOffset))).toFixed(2);
-      endTime = (endTime + (!data.endOffset ? 0 : parseFloat(data.endOffset))).toFixed(2);
       console.log('b1', startTime, endTime, audioRef.currentTime)
+
+      startTime = parseFloat((startTime + (!data.startOffset ? 0 : parseFloat(data.startOffset))).toFixed(2));
+      endTime = parseFloat((endTime + (!data.endOffset ? 0 : parseFloat(data.endOffset))).toFixed(2));
+      console.log('c1', startTime, endTime, audioRef.currentTime)
 
 
       try {
         if (startTime > endTime) {
           console.log(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
           alert(`时间戳偏移量调过头了 ${startTime} ${endTime}`)
+          debugger
           return
         }
-        console.log('c1', startTime, endTime, audioRef.currentTime)
+        console.log('d1', startTime, endTime, audioRef.currentTime)
         audioRef.currentTime = startTime
         await audioRef.play();
       } catch (error) {
@@ -183,15 +185,14 @@ function App() {
       console.log('audioUpdate', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
       let endTime = srtTime2second(data.endTime) / 1000
-      console.log('a2', startTime, endTime, audioRef.currentTime)
+      // console.log('a2', startTime, endTime, audioRef.currentTime)
 
       startTime = getBegin(startTime, endTime, data)
-
-      console.log('b2', startTime, endTime, audioRef.currentTime)
+      // console.log('b2', startTime, endTime, audioRef.currentTime)
 
       startTime = parseFloat((startTime + (!data.startOffset ? 0 : parseFloat(data.startOffset))).toFixed(2))
       endTime = parseFloat((endTime + (!data.endOffset ? 0 : parseFloat(data.endOffset))).toFixed(2))
-      console.log('c2', startTime, endTime, audioRef.currentTime)
+      // console.log('c2', startTime, endTime, audioRef.currentTime)
 
       try {
         if (startTime > endTime) {
@@ -209,7 +210,6 @@ function App() {
           console.log('e2', startTime, endTime, audioRef.currentTime)
           audioRef.currentTime = startTime
           await audioRef.play();
-          // await audioRef.pause();
         }
       } catch (error) {
         console.log('浏览器自动播放受限,1.手动点击解除限制 2.安装pwa解除限制 3.移动端添加到主屏幕解除限制', error)
@@ -270,8 +270,7 @@ function App() {
   }
 
   function getAudio() {
-    const audioArr = getMediaArr().filter((i) => i.name.endsWith('.mp3'))
-    console.log(2333333, audioArr)
+    const audioArr = getMediaArr().filter((i) => i.name.endsWith('.ogg'))
     if (audioArr.length > 0) {
       return URL.createObjectURL(audioArr[0])
     }
@@ -604,7 +603,7 @@ function App() {
             <div class="text-child">
               <div>
                 <div>
-                  <audio ref={audioRef} controls
+                  <audio ref={audioRef} controls src={getAudio()}
                     // onLoadedMetaData={
                     //   [playAudio, {
                     //     startTime: getFileData()?.card?.[getIndex()]?.start,
@@ -621,7 +620,7 @@ function App() {
                       }]
                     }
                   >
-                    <source id="myAudio" src={getAudio()} type="audio/mp3" ></source>
+                    {/* <source id="myAudio" src={getAudio()} type="audio/mp3" ></source> */}
                   </audio>
                 </div>
                 <div>
@@ -669,6 +668,12 @@ function App() {
                       return { ...i }
                     })
                     endOffsetRef.focus()
+
+                    //要不然还是用另一个audio来播放吧,避免出现声音的延迟
+                    // let st = srtTime2second(getFileData()?.card?.[getIndex()]?.start) / 1000
+                    // let et = srtTime2second(getFileData()?.card?.[getIndex()]?.end) / 1000
+                    // audioRef.currentTime = et + parseFloat(getFileData()?.card?.[getIndex()]?.endOffset) - 1
+                    // audioRef.play()
                   }} />
                   <span>(s)</span>
                   <label > begin</label>
