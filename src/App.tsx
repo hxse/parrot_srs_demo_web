@@ -5,7 +5,7 @@ import './App.css'
 import { openFile, openDir, getFile, parseDir } from "./pick_file.ts"
 import { store, createIdb } from './idb_io.ts'
 
-import { initFsrs, newCard, schedulingCard, parseFsrsObj } from "./fsrs-api.ts"
+import { initFsrs, newCard, schedulingCard, str2json, json2str } from "./fsrs-api.ts"
 
 import { createZip, createFile } from './convert-zip.ts'
 import jsZip from 'jszip'
@@ -83,11 +83,10 @@ function reSetArr(fileData: any) {
 }
 
 async function cleanUserData(fileObj: any, fk: string) {
-  const [deck_name, name] = [fk.split(' ').slice(0, -1).join(' '), fk.split(' ').slice(-1).join(' ')]
-  deck_name
+  const [, name] = [fk.split(' ').slice(0, -1).join(' '), fk.split(' ').slice(-1).join(' ')]
   if (name == "config.json") {
     const text = await fileObj.text()
-    const obj = parseFsrsObj(text);
+    const obj = str2json(text);
     for (let c of obj.card) {
       if (c.fsrs) {
         delete c.fsrs
@@ -99,11 +98,27 @@ async function cleanUserData(fileObj: any, fk: string) {
         delete c.card_id
       }
     }
-    const str = JSON.stringify(obj, null, 4)
+    const str = json2str(obj)
     const newfileObj = createFile(str, name)
     return newfileObj
   }
   return fileObj
+}
+
+function addUndo(mode: string, undoObj: any[], fdObj: any, max: number) {
+  const getLast = (i: any[], n: number) => i.slice(-n == 0 ? i.length : -n, i.length)
+  if (max < 0) {
+    throw new Error(`getUndoMax 是大于等于0的整数 ${max}`);
+  }
+  const str = json2str(fdObj)
+  if (mode == "update") {
+    console.log("test1111111111", str2json(str).card[0].fsrs)
+    return [...getLast(undoObj, max - 1), { "act": "update", "config.json": str }]
+  }
+  if (mode == "delete") {
+    return [...undoObj.slice(0, - 1)]
+  }
+  return []
 }
 
 let audioRef: any
@@ -142,6 +157,8 @@ function App() {
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
   const [getUndo, setUndo] = createSignal<any[]>([])
+  const [getUndoMax, setUndoMax] = createSignal<number>(6)//大于等于0的整数
+
 
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
   // const [getEndOffset, setEndOffset] = createSignal<number>(0)
@@ -169,17 +186,17 @@ function App() {
       if (!data) {
         return
       }
-      console.log('audioPlay', data.startTime, data.endTime, audioRef.currentTime)
+      // console.log('audioPlay', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
       let endTime = srtTime2second(data.endTime) / 1000
-      console.log('a1', startTime, endTime, audioRef.currentTime)
+      // console.log('a1', startTime, endTime, audioRef.currentTime)
 
       startTime = getBegin(startTime, endTime, data)
-      console.log('b1', startTime, endTime, audioRef.currentTime)
+      // console.log('b1', startTime, endTime, audioRef.currentTime)
 
       startTime = parseFloat((startTime + (!data.startOffset ? 0 : parseFloat(data.startOffset))).toFixed(2));
       endTime = parseFloat((endTime + (!data.endOffset ? 0 : parseFloat(data.endOffset))).toFixed(2));
-      console.log('c1', startTime, endTime, audioRef.currentTime)
+      // console.log('c1', startTime, endTime, audioRef.currentTime)
 
 
       try {
@@ -189,7 +206,7 @@ function App() {
           return
         }
         setIsWarning(false)
-        console.log('d1', startTime, endTime, audioRef.currentTime)
+        // console.log('d1', startTime, endTime, audioRef.currentTime)
         audioRef.currentTime = startTime
         await audioRef.play();
       } catch (error) {
@@ -208,7 +225,7 @@ function App() {
       return
     }
     if (getLockAudio()) {
-      console.log('audioUpdate', data.startTime, data.endTime, audioRef.currentTime)
+      // console.log('audioUpdate', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
       let endTime = srtTime2second(data.endTime) / 1000
       // console.log('a2', startTime, endTime, audioRef.currentTime)
@@ -228,12 +245,12 @@ function App() {
         }
         setIsWarning(false)
         if (audioRef.currentTime < startTime) {
-          console.log('d2', startTime, endTime, audioRef.currentTime)
+          // console.log('d2', startTime, endTime, audioRef.currentTime)
           audioRef.currentTime = startTime
           await audioRef.play();
         }
         if (audioRef.currentTime > endTime) {
-          console.log('e2', startTime, endTime, audioRef.currentTime)
+          // console.log('e2', startTime, endTime, audioRef.currentTime)
           audioRef.currentTime = startTime
           await audioRef.play();
         }
@@ -335,7 +352,7 @@ function App() {
         flag = true
         const file = await getFile(fileHandle)
         const text = await file.text()
-        obj = parseFsrsObj(text);
+        obj = str2json(text);
         preProcessing(obj)
         await updateIdb()
         batch(async () => {
@@ -389,7 +406,7 @@ function App() {
     for (const file of fileArr) {
       if (file.name == "config.json") {
         const text = await file.text()
-        const obj = parseFsrsObj(text);
+        const obj = str2json(text);
         createZip(obj['name_zip'] ? obj['name_zip'] : "demo.zip", fileArr, mediaArr)
       }
     }
@@ -439,7 +456,7 @@ function App() {
       for (const file of fileArr) {
         if (file.name == 'config.json') {
           const text = await file.text()
-          const obj = parseFsrsObj(text);
+          const obj = str2json(text);
           setIsCacheFile(true)
           // setFileObj(file)
           setFileData(obj)
@@ -492,8 +509,7 @@ function App() {
     if (getFileData().name) {
       const file = { 'name': "config.json" }//这个最简单直接,不然太麻烦了
       const obj = getFileData()
-
-      const str = JSON.stringify(obj, null, 4)
+      const str = json2str(obj)
       const newFile = createFile(str, file.name)
       await store(getIdb(), 'put', { storeName: "file", value: newFile, key: getCacheName(file, obj) })
       console.log('change: fileData', getFileData())
@@ -538,17 +554,24 @@ function App() {
 
     if (update) {
       const { card, review_log } = scheduling_cards[rating]
-      setFileData((i) => {
-        i.card[idx].fsrs = card
-        if (!i.card[idx].firstUpdate) {
-          i.card[idx].firstUpdate = card.last_review
-        }
-        if (!getTestPreview()) {
-          const res = reSetIndex(i)
-          i.index = res
-          setIndex(res)
-        }
-        return { ...i }
+      batch(async () => {
+        setFileData((fdObj) => {
+
+          setUndo((undoObj) => {
+            return addUndo('update', undoObj, { ...fdObj }, getUndoMax())
+          })
+
+          fdObj.card[idx].fsrs = card
+          if (!fdObj.card[idx].firstUpdate) {
+            fdObj.card[idx].firstUpdate = card.last_review
+          }
+          if (!getTestPreview()) {
+            const res = reSetIndex(fdObj)
+            fdObj.index = res
+            setIndex(res)
+          }
+          return { ...fdObj }
+        })
       })
       scheduling_cards = schedulingCard(card, getTestDate())
 
@@ -592,13 +615,13 @@ function App() {
     <>
       <div class="card">
         <button onClick={readZip}>
-          open file
+          打开文件
         </button>
         <button onClick={async () => {
           const dirHandle = await openDir()
           await readDir(dirHandle, 'dir')
         }}>
-          open dir
+          打开文件夹
         </button>
         <button onclick={() => {
           // runDownloadFile(fileData())
@@ -612,6 +635,29 @@ function App() {
           store(getIdb(), 'clear', { storeName: 'file' })
           store(getIdb(), 'clear', { storeName: 'media' })
         }}>清理缓存</button>
+        <button onclick={() => {
+          setUndo((undoObj) => {
+            const last = undoObj[undoObj.length - 1]
+            if (last) {
+              if (last.act == "update") {
+                const fdObj = str2json(last['config.json'])
+                batch(async () => {
+                  setFileData({ ...fdObj })
+                  if (getTestPreview()) {
+                    setIndex(fdObj.index)
+                  } else {
+                    setIndex(reSetIndex(fdObj))
+                  }
+                  setLogsCsv((i: string[]) => i.slice(0, - 1))
+                })
+              }
+            }
+            return addUndo('delete', undoObj, undefined, getUndoMax())
+          })
+        }}>回撤</button>
+        <button onclick={() => {
+
+        }}>暂停</button>
 
         <Show when={getTestDate()}>
           <button onClick={() => {
@@ -639,7 +685,7 @@ function App() {
         </Show>
 
         <div>
-          {`idx: ${getIndex()} fdx: ${getFileData()?.index} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length} undo: ${getUndo().length}`}
+          {`idx: ${getIndex()} fdx: ${getFileData()?.index} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length} undo: ${getUndo().length}/${getUndoMax()}`}
         </div>
 
         <div class="text">
@@ -777,6 +823,7 @@ function App() {
                 <br />
                 {
                   (() => {
+                    console.log('刷新')
                     const idx = getIndex()
                     if (idx === undefined) {
                       return ''

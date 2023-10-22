@@ -66,8 +66,12 @@ export function repeatCard(scheduling_cards: Record<number, SchedulingInfo>, num
     }
     return { card, due, state, review_log }
 }
+export function json2str(obj: any) {
+    const str = JSON.stringify(obj, null, 4)
+    return str
+}
 
-export function parseFsrsObj(text: string) {
+export function str2json(text: string) {
     function dateTimeReviver(key: string, value: any) {
         if (key == "due" || key == "last_review" || key == "firstUpdate") {
             return new Date(value);
