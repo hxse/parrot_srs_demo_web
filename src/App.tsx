@@ -174,7 +174,7 @@ function App() {
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
   const [getUndo, setUndo] = createSignal<any[]>([])
-  const [getUndoMax, setUndoMax] = createSignal<number>(10)//大于等于0的整数
+  const [getUndoMax,] = createSignal<number>(10)//大于等于0的整数
 
 
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
