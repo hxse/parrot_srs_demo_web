@@ -76,7 +76,9 @@ function reSetArr(fileData: any) {
     }
   }
   return {
-    waitArr, oldArr, newArr
+    waitArr: waitArr.map((i) => ({ idx: i, card: fileData.card[i] })),
+    oldArr: oldArr.map((i) => ({ idx: i, card: fileData.card[i] })),
+    newArr: newArr.map((i) => ({ idx: i, card: fileData.card[i] })),
   }
 }
 
@@ -86,10 +88,15 @@ async function cleanUserData(fileObj: any, fk: string) {
   if (name == "config.json") {
     const text = await fileObj.text()
     const obj = parseFsrsObj(text);
-    obj.haha = "heihei"
     for (let c of obj.card) {
       if (c.fsrs) {
         delete c.fsrs
+      }
+      if (c.firstUpdate) {
+        delete c.firstUpdate
+      }
+      if (c.card_id) {
+        delete c.card_id
       }
     }
     const str = JSON.stringify(obj, null, 4)
@@ -126,9 +133,11 @@ function App() {
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
 
-  const [getLimit,] = createSignal<number>(15)
+  const [getLimit,] = createSignal<number>(10)
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
   const [getLimitDue, setLimitDue] = createSignal<number>(0)
+  const [getOldArrNum, setOldArrNum] = createSignal<number>(0)
+  const [getWaitArrNum, setWaitArrNum] = createSignal<number>(0)
 
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
@@ -157,6 +166,9 @@ function App() {
 
   async function audioPlay(data: any) {
     if (getLockAudio()) {
+      if (!data) {
+        return
+      }
       console.log('audioPlay', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
       let endTime = srtTime2second(data.endTime) / 1000
@@ -192,6 +204,9 @@ function App() {
     }
   }
   async function audioUpdate(data: any) {
+    if (!data) {
+      return
+    }
     if (getLockAudio()) {
       console.log('audioUpdate', data.startTime, data.endTime, audioRef.currentTime)
       let startTime = srtTime2second(data.startTime) / 1000
@@ -248,34 +263,32 @@ function App() {
     const { waitArr, oldArr, newArr } = reSetArr(fileData)
 
     console.log('waitArr', waitArr)
-    console.log(waitArr.map((i) => fileData.card[i].fsrs.due))
-
     console.log('oldArr', oldArr)
-    console.log(oldArr.map((i) => fileData.card[i].fsrs.due))
-
     console.log('newArr', newArr)
-    console.log(newArr.map((i) => fileData.card[i]))
+    setOldArrNum(oldArr.length)
+    setWaitArrNum(waitArr.length)
 
-    const fCur = (i: any) => sameDay(i.last_review, new Date())
-    const fDue = (i: any) => sameDay(i.last_review, new Date()) && !sameDay(i.due, new Date())
-    const lCur = [...waitArr, ...oldArr].map((i) => fileData.card[i].fsrs).filter((i) => fCur(i))
-    const lDue = [...waitArr, ...oldArr].map((i) => fileData.card[i].fsrs).filter((i) => fDue(i))
+    const fCur = ({ card }: any) => sameDay(card.firstUpdate, new Date())
+    const lCur = [...waitArr, ...oldArr].filter((obj) => fCur(obj))
     setLimitCur(lCur.length)
+
+    const fDue = ({ card }: any) => sameDay(card.firstUpdate, new Date()) && sameDay(card.fsrs.due, new Date())
+    const lDue = [...waitArr, ...oldArr].filter((obj) => fDue(obj))
     setLimitDue(lDue.length)
 
     if (waitArr.length > 0) {
-      console.log('show', waitArr[0])
-      return waitArr[0]
+      return waitArr[0].idx
     }
 
-
     if (lCur.length >= getLimit()) {
+      if (lDue.length > 0) {
+        return lDue[0].idx
+      }
       return undefined
     }
 
     if (newArr.length > 0) {
-      console.log('show', newArr[0])
-      return newArr[0]
+      return newArr[0].idx
     }
   }
 
@@ -626,7 +639,7 @@ function App() {
         </Show>
 
         <div>
-          {`index: ${getIndex()} fileDataIndex: ${getFileData()?.index} limitCur: ${getLimitCur()} limitDue: ${getLimitDue()}  limitMax: ${getLimit()} count: ${getFileData()?.card?.length} undo: ${getUndo().length}`}
+          {`idx: ${getIndex()} fdx: ${getFileData()?.index} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length} undo: ${getUndo().length}`}
         </div>
 
         <div class="text">
@@ -647,7 +660,7 @@ function App() {
                     onTimeUpdate={
                       () => {
                         const idx = getIndex()
-                        audioUpdate(idx === undefined ? {} : {
+                        audioUpdate(idx === undefined ? undefined : {
                           startTime: getFileData()?.card?.[idx]?.start,
                           endTime: getFileData()?.card?.[idx]?.end,
                           startOffset: getFileData()?.card?.[idx]?.startOffset,
@@ -665,7 +678,7 @@ function App() {
                     onclick={
                       () => {
                         const idx = getIndex()
-                        audioPlay(idx === undefined ? {} : {
+                        audioPlay(idx === undefined ? undefined : {
                           startTime: getFileData()?.card?.[idx]?.start,
                           endTime: getFileData()?.card?.[idx]?.end,
                           startOffset: getFileData()?.card?.[idx]?.startOffset,
@@ -766,7 +779,7 @@ function App() {
                   (() => {
                     const idx = getIndex()
                     if (idx === undefined) {
-                      return 'today done'
+                      return ''
                     }
                     return getFileData()?.card?.[idx]?.text?.['zh-cn']
                   })()

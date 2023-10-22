@@ -69,17 +69,11 @@ export function repeatCard(scheduling_cards: Record<number, SchedulingInfo>, num
 
 export function parseFsrsObj(text: string) {
     function dateTimeReviver(key: string, value: any) {
-        if (key == "due" || key == "last_review") {
+        if (key == "due" || key == "last_review" || key == "firstUpdate") {
             return new Date(value);
         }
         return value;
     }
     const json = JSON.parse(text, dateTimeReviver);
     return json
-
 }
-
-// export function getLog() {
-//     review_log = scheduling_cards[rating.Good].review_log
-
-// }
