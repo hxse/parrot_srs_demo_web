@@ -49,4 +49,4 @@
   * 测试一下和anki的fsrs间隔是否一致
   * 浏览器对于自动播放音频限制
     * https://developer.chrome.com/blog/autoplay/
-  * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留
+  * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留,config.json里的index字段没有用可以删了,属于历史遗留
