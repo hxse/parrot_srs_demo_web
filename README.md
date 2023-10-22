@@ -29,6 +29,8 @@
     20230723154504-duzgj0v,1691046464000,2,0,5
     20230713230946-17j80ne,1691046470000,2,2,5
     ```
+# 数据格式
+  * begin,undo,这些数据不会持久化到本地,刷新就消失了
 # 框架问题
   * https://github.com/jimmywarting/native-file-system-adapter/issues/14
     * 目前不支持remove,所以用idb

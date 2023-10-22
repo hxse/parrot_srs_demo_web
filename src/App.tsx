@@ -50,9 +50,14 @@ function reSetArr(fileData: any) {
   const oldArr = []//未过期的旧卡
   const newArr = []//未学过的新卡
   const _oldArr = []//临时数组
+  const pauseArr = []//已暂停的数组
   for (let index = 0; index < fileData.card.length; index++) {
     const card = fileData.card
     const fsrs = card[index].fsrs;
+    if (card[index].pause) {
+      pauseArr.push(index)
+      continue
+    }
     if (fsrs) {
       _oldArr.push(index)
     } else {
@@ -79,6 +84,7 @@ function reSetArr(fileData: any) {
     waitArr: waitArr.map((i) => ({ idx: i, card: fileData.card[i] })),
     oldArr: oldArr.map((i) => ({ idx: i, card: fileData.card[i] })),
     newArr: newArr.map((i) => ({ idx: i, card: fileData.card[i] })),
+    pauseArr: pauseArr.map((i) => ({ idx: i, card: fileData.card[i] })),
   }
 }
 
@@ -97,9 +103,16 @@ async function cleanUserData(fileObj: any, fk: string) {
       if (c.card_id) {
         delete c.card_id
       }
+      if (c.pause) {
+        delete c.pause
+      }
     }
     const str = json2str(obj)
     const newfileObj = createFile(str, name)
+    return newfileObj
+  }
+  if (name == "revlog.csv") {
+    const newfileObj = createFile('', name)
     return newfileObj
   }
   return fileObj
@@ -112,8 +125,10 @@ function addUndo(mode: string, undoObj: any[], fdObj: any, max: number) {
   }
   const str = json2str(fdObj)
   if (mode == "update") {
-    console.log("test1111111111", str2json(str).card[0].fsrs)
     return [...getLast(undoObj, max - 1), { "act": "update", "config.json": str }]
+  }
+  if (mode == 'pause') {
+    return [...getLast(undoObj, max - 1), { "act": "pause", "config.json": str }]
   }
   if (mode == "delete") {
     return [...undoObj.slice(0, - 1)]
@@ -144,6 +159,7 @@ function App() {
 
   const csvField = 'card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'
   const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>([])
+  const [getLogsCsvExtend, setLogsCsvExtent] = createSignal<Array<string>>([])//就是把logscsv根据pause净化一下
   //https://github.com/open-spaced-repetition/fsrs-optimizer
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
@@ -153,11 +169,12 @@ function App() {
   const [getLimitDue, setLimitDue] = createSignal<number>(0)
   const [getOldArrNum, setOldArrNum] = createSignal<number>(0)
   const [getWaitArrNum, setWaitArrNum] = createSignal<number>(0)
+  const [getPauseArrNum, setPauseArrNum] = createSignal<number>(0)
 
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
   const [getUndo, setUndo] = createSignal<any[]>([])
-  const [getUndoMax, setUndoMax] = createSignal<number>(6)//大于等于0的整数
+  const [getUndoMax, setUndoMax] = createSignal<number>(10)//大于等于0的整数
 
 
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
@@ -277,13 +294,15 @@ function App() {
   }
 
   function reSetIndex(fileData: any) {
-    const { waitArr, oldArr, newArr } = reSetArr(fileData)
+    const { waitArr, oldArr, newArr, pauseArr } = reSetArr(fileData)
 
     console.log('waitArr', waitArr)
     console.log('oldArr', oldArr)
     console.log('newArr', newArr)
+    console.log('pauseArr', pauseArr)
     setOldArrNum(oldArr.length)
     setWaitArrNum(waitArr.length)
+    setPauseArrNum(pauseArr.length)
 
     const fCur = ({ card }: any) => sameDay(card.firstUpdate, new Date())
     const lCur = [...waitArr, ...oldArr].filter((obj) => fCur(obj))
@@ -370,6 +389,8 @@ function App() {
             m.push(await getFile(fileHandle))
           }
           setMediaArr(m)
+
+          setUndo([])
         })
       }
       if (fileHandle.name == 'revlog.csv') {
@@ -377,7 +398,6 @@ function App() {
         const text = await file.text()
         const logArr = text.split('\n').filter((i: string) => i.trim())
         setLogsCsv(logArr.length > 0 ? logArr : [csvField])
-
       }
     }
     if (!flag) {
@@ -431,7 +451,6 @@ function App() {
     setIdb(idb)
 
     initFsrs(undefined, 0.9)
-
 
     const res = await store(getIdb(), 'getAllKeys', { storeName: 'file' })
     const fileArr: any[] = []
@@ -519,18 +538,35 @@ function App() {
   }, { defer: true }));
 
   createEffect(on(getLogsCsv, async () => {
+    function runCsvExtend() {
+      //派生一个log对象,根据pause过滤,只用来导出和显示,不用来做持久化
+      const csvArr = getLogsCsv()
+      const parseIdArr = getFileData().card.filter((i: any) => i.pause).map((i: any) => i.card_id)
+      console.log(csvArr.length)
+      const csvArrExtend = csvArr.filter((c) => {
+        const res = parseIdArr.filter((i: any) => {
+          return c.split(',')[0] == i
+        })
+        return res.length == 0
+      })
+      setLogsCsvExtent([...csvArrExtend])
+    }
+
     if (getIsCacheLog()) {
       console.log('cache: getLogsCsv')
+      runCsvExtend()
       setIsCacheLog(false)
       return
     }
     if (getFileData().name) {
       const file = { 'name': "revlog.csv" }//这个最简单直接,不然太麻烦了
-      const obj = getLogsCsv()
-      const str = obj.join('\n')
+      const csvArr = getLogsCsv()
+      const str = csvArr.join('\n')
       const newFile = createFile(str, file.name)
       console.log('change: logsCsv', getFileData())
       await store(getIdb(), 'put', { storeName: "file", value: newFile, key: getCacheName(file, getFileData()) })
+
+      runCsvExtend()
     } else {
       console.log('init: logsCsv', getFileData())
     }
@@ -639,7 +675,7 @@ function App() {
           setUndo((undoObj) => {
             const last = undoObj[undoObj.length - 1]
             if (last) {
-              if (last.act == "update") {
+              if (last.act == "update" || last.act == "pause") {
                 const fdObj = str2json(last['config.json'])
                 batch(async () => {
                   setFileData({ ...fdObj })
@@ -648,7 +684,13 @@ function App() {
                   } else {
                     setIndex(reSetIndex(fdObj))
                   }
-                  setLogsCsv((i: string[]) => i.slice(0, - 1))
+                  if (last.act == "update") {
+                    console.log('回撤update模式', undoObj)
+                    setLogsCsv((i: string[]) => i.slice(0, - 1))
+                  } else {
+                    setLogsCsv((i: string[]) => [...i])
+                    console.log('回撤pause模式', undoObj)
+                  }
                 })
               }
             }
@@ -656,8 +698,29 @@ function App() {
           })
         }}>回撤</button>
         <button onclick={() => {
+          batch(async () => {
+            setFileData((i) => {
+              const idx = getIndex()
+              if (idx == undefined) {
+                return i
+              }
 
-        }}>暂停</button>
+              setUndo((undoObj) => {
+                return addUndo('pause', undoObj, { ...i }, getUndoMax())
+              })
+
+              i.card[idx].pause = true
+
+              if (getTestPreview()) {
+                setIndex(idx)
+              } else {
+                setIndex(reSetIndex(i))
+              }
+              setLogsCsv((i) => [...i])
+              return { ...i }
+            })
+          })
+        }}>{'暂停'}</button>
 
         <Show when={getTestDate()}>
           <button onClick={() => {
@@ -685,7 +748,7 @@ function App() {
         </Show>
 
         <div>
-          {`idx: ${getIndex()} fdx: ${getFileData()?.index} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length} undo: ${getUndo().length}/${getUndoMax()}`}
+          {`idx: ${getIndex()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()}`}
         </div>
 
         <div class="text">
@@ -750,17 +813,19 @@ function App() {
                       return !getFileData()?.card?.[idx]?.startOffset ? 0 : getFileData()?.card?.[idx]?.startOffset
                     })()
                   } onInput={(e) => {
-                    setFileData((i) => {
-                      const idx = getIndex()
-                      if (idx == undefined) {
-                        return i
-                      }
-                      if (parseFloat(e.target.value) == 0) {
-                        delete i.card[idx].startOffset
-                      } else {
-                        i.card[idx].startOffset = e.target.value
-                      }
-                      return { ...i }
+                    batch(async () => {
+                      setFileData((i) => {
+                        const idx = getIndex()
+                        if (idx == undefined) {
+                          return i
+                        }
+                        if (parseFloat(e.target.value) == 0) {
+                          delete i.card[idx].startOffset
+                        } else {
+                          i.card[idx].startOffset = e.target.value
+                        }
+                        return { ...i }
+                      })
                     })
                     startOffsetRef.focus()
                   }} />
@@ -776,17 +841,19 @@ function App() {
                     })()
                   } onInput={(e) => {
                     console.log(e.target.value)
-                    setFileData((i) => {
-                      const idx = getIndex()
-                      if (idx == undefined) {
-                        return i
-                      }
-                      if (parseFloat(e.target.value) == 0) {
-                        delete i.card[idx].endOffset
-                      } else {
-                        i.card[idx].endOffset = e.target.value
-                      }
-                      return { ...i }
+                    batch(async () => {
+                      setFileData((i) => {
+                        const idx = getIndex()
+                        if (idx == undefined) {
+                          return i
+                        }
+                        if (parseFloat(e.target.value) == 0) {
+                          delete i.card[idx].endOffset
+                        } else {
+                          i.card[idx].endOffset = e.target.value
+                        }
+                        return { ...i }
+                      })
                     })
                     endOffsetRef.focus()
                   }} />
@@ -879,7 +946,7 @@ function App() {
         </Show>
 
         <div ref={logRef} class='scroll'>
-          <For each={getLogsCsv()}>
+          <For each={getLogsCsvExtend()}>
             {(log) => (
               <div >
                 {log}

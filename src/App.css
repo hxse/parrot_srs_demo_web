@@ -7,13 +7,13 @@
   margin: 0 auto;
   overflow: scroll;
   text-align: left;
-  height: 15vh;
+  height: 20vh;
   width: 85vw;
   display: block;
 }
 
 .text {
-  height: 60vh;
+  height: 55vh;
   /* width: 85vw; */
   /* left: 100px; */
   overflow: scroll;
