@@ -176,6 +176,9 @@ function App() {
   const [getUndo, setUndo] = createSignal<any[]>([])
   const [getUndoMax,] = createSignal<number>(10)//大于等于0的整数
 
+  const [getStep,] = createSignal<number>(1)//大于等于0
+  const [getStepLong,] = createSignal<number>(2)//大于等于0
+
 
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
   // const [getEndOffset, setEndOffset] = createSignal<number>(0)
@@ -671,7 +674,7 @@ function App() {
           store(getIdb(), 'clear', { storeName: 'file' })
           store(getIdb(), 'clear', { storeName: 'media' })
         }}>清理缓存</button>
-        <button onclick={() => {
+        <button id="undo" onclick={() => {
           setUndo((undoObj) => {
             const last = undoObj[undoObj.length - 1]
             if (last) {
@@ -697,7 +700,7 @@ function App() {
             return addUndo('delete', undoObj, undefined, getUndoMax())
           })
         }}>回撤</button>
-        <button onclick={() => {
+        <button id="pause" onclick={() => {
           batch(async () => {
             setFileData((i) => {
               const idx = getIndex()
@@ -759,7 +762,7 @@ function App() {
             <div class="text-child">
               <div>
                 <div>
-                  <audio ref={audioRef} controls src={getAudio()}
+                  <audio id="myAudio" ref={audioRef} controls src={getAudio()}
                     // onLoadedMetaData={
                     //   [playAudio, {
                     //     startTime: getFileData()?.card?.[getIndex()]?.start,
@@ -784,6 +787,7 @@ function App() {
                 </div>
                 <div>
                   <button
+                    id="play"
                     onclick={
                       () => {
                         const idx = getIndex()
@@ -797,14 +801,46 @@ function App() {
                       }
                     }
                   >play</button>
-
+                  <button
+                    id="backward"
+                    onclick={
+                      () => {
+                        audioRef.currentTime -= getStep()
+                      }
+                    }
+                  >{'<-'}</button>
+                  <button
+                    id="forward"
+                    onclick={
+                      () => {
+                        audioRef.currentTime += getStep()
+                      }
+                    }
+                  >{'->'}</button>
+                  <button
+                    id="backward2"
+                    onclick={
+                      () => {
+                        audioRef.currentTime -= getStepLong()
+                      }
+                    }
+                  >{'<--'}</button>
+                  <button
+                    id="forward2"
+                    onclick={
+                      () => {
+                        audioRef.currentTime += getStepLong()
+                      }
+                    }
+                  >{'-->'}</button>
+                  <br />
                   <label > lock</label>
-                  <input type="checkbox" checked={getLockAudio()} onclick={() => {
+                  <input id="lock" type="checkbox" checked={getLockAudio()} onclick={() => {
                     setLockAudio(!getLockAudio())
                   }} />
 
-                  <label > startOffset</label>
-                  <input ref={startOffsetRef} class='offset' type="number" step="0.1" value={
+                  <label > {'||>'}</label>
+                  <input id="startOffset" ref={startOffsetRef} class='offset' type="number" step="0.1" value={
                     (() => {
                       const idx = getIndex()
                       if (!idx) {
@@ -830,8 +866,8 @@ function App() {
                     startOffsetRef.focus()
                   }} />
                   <span>(s) </span>
-                  <label > endOffset</label>
-                  <input ref={endOffsetRef} class='offset' type="number" step="0.1" value={
+                  <label > {'<||'}</label>
+                  <input id="endOffset" ref={endOffsetRef} class='offset' type="number" step="0.1" value={
                     (() => {
                       const idx = getIndex()
                       if (!idx) {
@@ -858,8 +894,8 @@ function App() {
                     endOffsetRef.focus()
                   }} />
                   <span>(s)</span>
-                  <label > begin</label>
-                  <input ref={beginRef} class='offset' type="number" step="0.1" min="0" max="1" value={getBeginAudio()} onInput={(e) => {
+                  <label > {'||'} </label>
+                  <input id="begin" ref={beginRef} class='offset' type="number" step="0.1" min="0" max="1" value={getBeginAudio()} onInput={(e) => {
                     console.log(e.target.value)
                     if (parseFloat(e.target.value) > 1) {
                       e.target.value = "0." + parseFloat(e.target.value)

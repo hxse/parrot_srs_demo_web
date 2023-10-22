@@ -14,7 +14,7 @@ export async function init_keyboard() {
             index, // Gamepad index: Number [0-3].
             gamepad, // Native Gamepad object.
         } = event.detail;
-        console.log(index, gamepad)
+        console.log('connected', index, gamepad)
     });
 
     listener.on('gamepad:axis', (event: any) => {
@@ -24,7 +24,32 @@ export async function init_keyboard() {
             value, // Current value: Number between -1 and 1. Float in analog mode, integer otherwise.
             gamepad, // Native Gamepad object
         } = event.detail;
-        console.log(index, axis, value, gamepad)
+        console.log('axis', index, axis, value, gamepad)
+
+        if (axis == 1 && value == 1) {
+            const el: HTMLElement | null = document.querySelector('#forward')
+            if (el) {
+                el.click()
+            }
+        }
+        if (axis == 1 && value == -1) {
+            const el: HTMLElement | null = document.querySelector('#backward')
+            if (el) {
+                el.click()
+            }
+        }
+        if (axis == 0 && value == -1) {
+            const el: HTMLElement | null = document.querySelector('#forward2')
+            if (el) {
+                el.click()
+            }
+        }
+        if (axis == 0 && value == 1) {
+            const el: HTMLElement | null = document.querySelector('#backward2')
+            if (el) {
+                el.click()
+            }
+        }
     });
 
     listener.on('gamepad:button', (event: any) => {
@@ -35,7 +60,7 @@ export async function init_keyboard() {
             pressed, // Native GamepadButton pressed value: Boolean.
             gamepad, // Native Gamepad object
         } = event.detail;
-        console.log(index, button, value, pressed, gamepad)
+        console.log('button', index, button, value, pressed, gamepad)
         if (button == 2 && pressed == true) {
             const el: HTMLElement | null = document.querySelector('#rating1')
             if (el) {
@@ -55,6 +80,24 @@ export async function init_keyboard() {
         }
         if (button == 1 && pressed == true) {
             const el: HTMLElement | null = document.querySelector('#rating4')
+            if (el) {
+                el.click()
+            }
+        }
+        if (button == 5 && pressed == true) {
+            const el: HTMLElement | null = document.querySelector('#play')
+            if (el) {
+                el.click()
+            }
+        }
+        if (button == 4 && pressed == true) {
+            const el: HTMLElement | null = document.querySelector('#undo')
+            if (el) {
+                el.click()
+            }
+        }
+        if (button == 9 && pressed == true) {
+            const el: HTMLElement | null = document.querySelector('#pause')
             if (el) {
                 el.click()
             }

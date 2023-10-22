@@ -26,8 +26,10 @@
 
 .text-child {
   position: relative;
-  top: 2rem;
+  top: 1rem;
 }
+
+label {}
 
 .wait {
   color: red;
