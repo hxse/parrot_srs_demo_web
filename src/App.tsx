@@ -128,10 +128,11 @@ function App() {
 
   const [getLimit,] = createSignal<number>(15)
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
+  const [getLimitDue, setLimitDue] = createSignal<number>(0)
 
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
-
+  const [getUndo, setUndo] = createSignal<any[]>([])
 
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
   // const [getEndOffset, setEndOffset] = createSignal<number>(0)
@@ -255,14 +256,20 @@ function App() {
     console.log('newArr', newArr)
     console.log(newArr.map((i) => fileData.card[i]))
 
+    const fCur = (i: any) => sameDay(i.last_review, new Date())
+    const fDue = (i: any) => sameDay(i.last_review, new Date()) && !sameDay(i.due, new Date())
+    const lCur = [...waitArr, ...oldArr].map((i) => fileData.card[i].fsrs).filter((i) => fCur(i))
+    const lDue = [...waitArr, ...oldArr].map((i) => fileData.card[i].fsrs).filter((i) => fDue(i))
+    setLimitCur(lCur.length)
+    setLimitDue(lDue.length)
+
     if (waitArr.length > 0) {
       console.log('show', waitArr[0])
       return waitArr[0]
     }
 
-    const l = [...waitArr, ...oldArr].map((i) => fileData.card[i].fsrs.last_review).filter((i) => sameDay(i, new Date()))
-    setLimitCur(l.length)
-    if (l.length >= getLimit()) {
+
+    if (lCur.length >= getLimit()) {
       return undefined
     }
 
@@ -447,6 +454,10 @@ function App() {
   });
 
   createEffect(on(getIndex, (index) => {
+    if (!getTestPreview()) {
+      showRating(-1, false)
+      return
+    }
     if (index !== undefined) {
       setFileData((i) => {
         if (i.index == index) {
@@ -516,6 +527,14 @@ function App() {
       const { card, review_log } = scheduling_cards[rating]
       setFileData((i) => {
         i.card[idx].fsrs = card
+        if (!i.card[idx].firstUpdate) {
+          i.card[idx].firstUpdate = card.last_review
+        }
+        if (!getTestPreview()) {
+          const res = reSetIndex(i)
+          i.index = res
+          setIndex(res)
+        }
         return { ...i }
       })
       scheduling_cards = schedulingCard(card, getTestDate())
@@ -542,6 +561,7 @@ function App() {
         })
       }
       updateLog()
+      return
     }
 
     for (let num of [1, 2, 3, 4]) {
@@ -606,7 +626,7 @@ function App() {
         </Show>
 
         <div>
-          {`index: ${getIndex()} fileDataIndex: ${getFileData()?.index} limitCur: ${getLimitCur()} limitMax: ${getLimit()} count: ${getFileData()?.card?.length}`}
+          {`index: ${getIndex()} fileDataIndex: ${getFileData()?.index} limitCur: ${getLimitCur()} limitDue: ${getLimitDue()}  limitMax: ${getLimit()} count: ${getFileData()?.card?.length} undo: ${getUndo().length}`}
         </div>
 
         <div class="text">
@@ -765,14 +785,6 @@ function App() {
 
             showRating(1, true)
 
-            if (!getTestPreview()) {
-              const i = reSetIndex(getFileData())
-              setFileData((obj) => {
-                obj.index = i
-                return { ...obj }
-              })
-              setIndex(i)
-            }
             setBeginAudio(0)
           }}>
             {getRating()[1] ? getRating()[1] : 'rating1'}
@@ -782,14 +794,6 @@ function App() {
 
             showRating(2, true)
 
-            if (!getTestPreview()) {
-              const i = reSetIndex(getFileData())
-              setFileData((obj) => {
-                obj.index = i
-                return { ...obj }
-              })
-              setIndex(i)
-            }
             setBeginAudio(0)
           }}>
             {getRating()[2] ? getRating()[2] : 'rating2'}
@@ -799,14 +803,6 @@ function App() {
 
             showRating(3, true)
 
-            if (!getTestPreview()) {
-              const i = reSetIndex(getFileData())
-              setFileData((obj) => {
-                obj.index = i
-                return { ...obj }
-              })
-              setIndex(i)
-            }
             setBeginAudio(0)
           }}>
             {getRating()[3] ? getRating()[3] : 'rating3'}
@@ -816,14 +812,6 @@ function App() {
 
             showRating(4, true)
 
-            if (!getTestPreview()) {
-              const i = reSetIndex(getFileData())
-              setFileData((obj) => {
-                obj.index = i
-                return { ...obj }
-              })
-              setIndex(i)
-            }
             setBeginAudio(0)
           }}>
             {getRating()[4] ? getRating()[4] : 'rating4'}
