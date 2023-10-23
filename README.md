@@ -58,4 +58,5 @@
     * 生成牌组
       * `g lw "D:\my_repo\parrot_fashion\download\BBC Learning English" 0 0 0 -enable_zip 1`
     * 合并牌组
+      * `cd D:\my_repo\parrot_fashion\crawler`
       * `pdm run python .\loop_whisper.py mzf 'D:\my_repo\parrot_fashion\download\BBC Learning English' "C:\Users\hxse\Downloads\srs file" -glob="**/20220[123]*.zip"  -stemStart 0 -stemEnd -1`
