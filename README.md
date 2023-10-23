@@ -50,6 +50,8 @@
   * 浏览器对于自动播放音频限制
     * https://developer.chrome.com/blog/autoplay/
   * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留,config.json里的index字段没有用可以删了,属于历史遗留
+  * 支持树状目录,人性化的导入后合并牌组, 导出后合并牌组, 目前不弄了, 太花里胡哨了,用命令行工具解决吧
+    * 不过每张卡片都有deck_name字段, 以后有空弄是可以的
 # 相关命令
   * https://github.com/hxse/parrot_fashion
     * 生成牌组
