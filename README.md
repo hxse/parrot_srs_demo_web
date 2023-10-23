@@ -50,3 +50,9 @@
   * 浏览器对于自动播放音频限制
     * https://developer.chrome.com/blog/autoplay/
   * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留,config.json里的index字段没有用可以删了,属于历史遗留
+# 相关命令
+  * https://github.com/hxse/parrot_fashion
+    * 生成牌组
+      * `g lw "D:\my_repo\parrot_fashion\download\BBC Learning English" 0 0 0 -enable_zip 1`
+    * 合并牌组
+      * `pdm run python .\loop_whisper.py mzf 'D:\my_repo\parrot_fashion\download\BBC Learning English' "C:\Users\hxse\Downloads\srs file" -glob="**/20220[123]*.zip"  -stemStart 0 -stemEnd -1`

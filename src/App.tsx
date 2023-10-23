@@ -136,6 +136,29 @@ function addUndo(mode: string, undoObj: any[], fdObj: any, max: number) {
   return []
 }
 
+function getDeck(fdObj: any) {
+  const res: any = []
+  for (const f of fdObj.card) {
+    function find() {
+      for (const r of res) {
+        if (r.deck_name == f.deck_name) {
+          return r
+        }
+      }
+      return undefined
+    }
+    let obj: any = find()
+    if (obj === undefined) {
+      obj = { deck_name: f.deck_name, card: [f] }
+      res.push(obj)
+    } else {
+      obj.card = [...obj.card, f]
+    }
+  }
+  console.log('deckArr', res)
+  return res
+}
+
 let audioRef: any
 let beginRef: any
 let startOffsetRef: any
@@ -150,6 +173,10 @@ function App() {
   const [getIdb, setIdb] = createSignal<any>()
   // const [getIdb, setIdb] = createSignal<any>()
 
+  const [getDeckArr, setDeckArr] = createSignal<any[]>([])
+  const [getDeckIdx, setDeckIdx] = createSignal<number>(-1)
+  const [getDeckCount, setDeckCount] = createSignal<number>(-1)
+
   const [getIndex, setIndex] = createSignal<number | undefined>(undefined)
   const [getIsLoad, setIsLoad] = createSignal(false)
   const [getFileData, setFileData] = createSignal<any>({})
@@ -162,7 +189,7 @@ function App() {
   const csvField = 'card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'
   const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>([])
   const [getLogsCsvExtend, setLogsCsvExtent] = createSignal<Array<string>>([])//就是把logscsv根据pause净化一下
-  const [getIsLogsFilter, setIsLogsFilter] = createSignal<boolean>(true)//浏览器参数,不过不建议改,意义不大
+  const [getIsLogsFilter,] = createSignal<boolean>(true)//浏览器参数,不过不建议改,意义不大
 
   //https://github.com/open-spaced-repetition/fsrs-optimizer
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
@@ -335,8 +362,11 @@ function App() {
     }
   }
 
-  function getAudio() {
-    const audioArr = getMediaArr().filter((i: any) => i.name.endsWith('.ogg'))
+  function getAudio(data: any) {
+    if (!data) {
+      return ""
+    }
+    const audioArr = getMediaArr().filter((i: any) => i.name == `media/${data.audio_name}`)
     if (audioArr.length > 0) {
       return URL.createObjectURL(audioArr[0])
     }
@@ -384,6 +414,8 @@ function App() {
         batch(async () => {
           setIsLoad(true)
           setFileData(obj)
+
+          setDeckArr(getDeck(obj))
           // setFileObj(file)
           if (getTestPreview()) {
             setIndex(obj.index)
@@ -488,6 +520,7 @@ function App() {
           setIsCacheFile(true)
           // setFileObj(file)
           setFileData(obj)
+          setDeckArr(getDeck(obj))
           if (getTestPreview()) {
             setIndex(obj.index)
           } else {
@@ -516,6 +549,12 @@ function App() {
   createEffect(on(getIndex, (index) => {
     if (!getTestPreview()) {
       showRating(-1, false)
+      if (index !== undefined) {
+        const deckArr = getDeckArr()
+        const idx = deckArr.map((i) => i.deck_name).indexOf(getFileData().card[index].deck_name)
+        setDeckIdx(idx)
+        setDeckCount(deckArr.length)
+      }
       return
     }
     if (index !== undefined) {
@@ -529,6 +568,14 @@ function App() {
       showRating(-1, false)
     }
   }, { defer: false }));
+
+  createEffect(on(getDeckArr, (deckArr) => {
+    if (getFileData().name) {
+      console.log(deckArr)
+      // debugger
+    }
+  }, { defer: false }));
+
 
   createEffect(on(getFileData, async () => {
     if (getIsCacheFile()) {
@@ -643,7 +690,7 @@ function App() {
           review_duration: 5,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           day_start: 8,
-          deck_name: getFileData().name,
+          deck_name: getFileData().card[idx].deck_name.replaceAll(',', ' '),
           card_sort: idx,
         }
         const logCsv = `${logObj.card_id},${logObj.review_time},${logObj.review_rating},${logObj.review_state},${logObj.review_duration},${logObj.timezone},${logObj.day_start},${logObj.deck_name},${logObj.card_sort}`
@@ -771,7 +818,7 @@ function App() {
         </Show>
 
         <div>
-          {`idx: ${getIndex()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1}`}
+          {`idx: ${getIndex()} deck: ${getDeckIdx()}/${getDeckCount()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1}`}
         </div>
 
         <div class="text">
@@ -779,16 +826,19 @@ function App() {
             when={getIsLoad()}
             fallback={<div class="wait">please select a local file</div>}
           >
+
             <div class="text-child">
               <div>
                 <div>
-                  <audio id="myAudio" ref={audioRef} controls src={getAudio()}
-                    // onLoadedMetaData={
-                    //   [playAudio, {
-                    //     startTime: getFileData()?.card?.[getIndex()]?.start,
-                    //     endTime: getFileData()?.card?.[getIndex()]?.end,
-                    //   }]
-                    // }
+                  <audio id="myAudio" ref={audioRef} controls src={
+                    ((): any => {
+                      const idx = getIndex()
+                      return getAudio(idx === undefined ? undefined : {
+                        deck_name: getFileData()?.card?.[idx]?.deck_name,
+                        audio_name: getFileData()?.card?.[idx]?.audio_name
+                      })
+                    })()
+                  }
                     onTimeUpdate={
                       () => {
                         const idx = getIndex()
@@ -933,36 +983,55 @@ function App() {
                 </Show>
 
                 <br />
+                <div class='deck'>
+                  {
+                    ((): any => {
+                      const idx = getIndex()
+                      if (idx === undefined) {
+                        return ""
+                      }
+                      return (<div> {getFileData()?.card?.[idx]?.deck_name.split("::").at(-1)}</div>)
+
+                    })()
+                  }
+                </div>
+
+                <br />
                 <Show
                   when={getIsFront()}
                 >
                   {''}
                 </Show>
-                <Show
-                  when={!getIsFront()}
-                >
-                  {
-                    (() => {
-                      const idx = getIndex()
-                      if (idx === undefined) {
-                        return 'today done'
-                      }
-                      return getFileData()?.card?.[idx]?.text?.['en']
-                    })()
-                  }
-                  <br />
-                  <br />
-                  {
-                    (() => {
-                      console.log('刷新')
-                      const idx = getIndex()
-                      if (idx === undefined) {
-                        return ''
-                      }
-                      return getFileData()?.card?.[idx]?.text?.['zh-cn']
-                    })()
-                  }
-                </Show>
+
+
+
+                <div>{
+                  (() => {
+                    const idx = getIndex()
+                    if (idx === undefined) {
+                      audioRef.pause()
+                      return (
+                        <div>{'today done'}</div>
+                      )
+                    }
+                    else {
+                      return (
+                        <Show when={!getIsFront()}>
+                          {
+                            getFileData()?.card?.[idx]?.text?.['en']
+                          }
+                          <br />
+                          <br />
+                          {
+                            getFileData()?.card?.[idx]?.text?.['zh-cn']
+                          }
+                        </Show>
+                      )
+                    }
+                  })()
+                }
+                </div>
+
                 <br />
               </div>
             </div>
@@ -973,9 +1042,9 @@ function App() {
 
 
         <Show
-          when={getIsFront()}
+          when={getIsFront() && getIndex() !== undefined}
         >
-          <button onclick={() => {
+          <button id="showAnswer" class='showAnswer' onclick={() => {
             setIsFront(false)
           }}>{'show answer'}</button>
         </Show>

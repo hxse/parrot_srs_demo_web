@@ -64,25 +64,58 @@ export async function init_keyboard() {
         if (button == 2 && pressed == true) {
             const el: HTMLElement | null = document.querySelector('#rating1')
             if (el) {
+                console.log('click', "rating1")
                 el.click()
+            } else {
+                const el: HTMLElement | null = document.querySelector('#showAnswer')
+                if (el) {
+                    console.log('click', "showAnswer")
+                    el.click()
+                }
             }
         }
         if (button == 0 && pressed == true) {
             const el: HTMLElement | null = document.querySelector('#rating3')
             if (el) {
                 el.click()
+            } else {
+                const el: HTMLElement | null = document.querySelector('#showAnswer')
+                if (el) {
+                    console.log('click', "showAnswer")
+                    el.click()
+                }
             }
         } if (button == 3 && pressed == true) {
-            const el: HTMLElement | null = document.querySelector('#rating2')
+            const el: HTMLElement | null = document.querySelector('#backward')
             if (el) {
                 el.click()
             }
+            // const el: HTMLElement | null = document.querySelector('#rating2')
+            // if (el) {
+            //     el.click()
+            // } else {
+            //     const el: HTMLElement | null = document.querySelector('#showAnswer')
+            //     if (el) {
+            //         console.log('click', "showAnswer")
+            //         el.click()
+            //     }
+            // }
         }
         if (button == 1 && pressed == true) {
-            const el: HTMLElement | null = document.querySelector('#rating4')
+            const el: HTMLElement | null = document.querySelector('#forward')
             if (el) {
                 el.click()
             }
+            // const el: HTMLElement | null = document.querySelector('#rating4')
+            // if (el) {
+            //     el.click()
+            // } else {
+            //     const el: HTMLElement | null = document.querySelector('#showAnswer')
+            //     if (el) {
+            //         console.log('click', "showAnswer")
+            //         el.click()
+            //     }
+            // }
         }
         if (button == 5 && pressed == true) {
             const el: HTMLElement | null = document.querySelector('#play')

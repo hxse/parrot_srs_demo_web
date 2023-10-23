@@ -44,3 +44,15 @@ label {}
   background-color: #f44336;
   color: white;
 }
+
+.showAnswer {
+  width: 16rem;
+}
+
+.deck {
+  width: 100vw;
+  overflow: hidden;
+  text-overflow: clip;
+  /* white-space: nowrap; */
+  display: none;
+}
