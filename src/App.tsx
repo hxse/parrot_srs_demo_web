@@ -157,6 +157,8 @@ function App() {
   const [getRating, setRating] = createSignal<any>({})
   const [getMediaArr, setMediaArr] = createSignal<any>([])
 
+  const [getIsFront, setIsFront] = createSignal(true)
+
   const csvField = 'card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'
   const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>([])
   const [getLogsCsvExtend, setLogsCsvExtent] = createSignal<Array<string>>([])//就是把logscsv根据pause净化一下
@@ -396,6 +398,8 @@ function App() {
           setMediaArr(m)
 
           setUndo([])
+
+          setIsFront(true)
         })
       }
       if (fileHandle.name == 'revlog.csv') {
@@ -491,6 +495,8 @@ function App() {
           }
           setIsLoad(true)
           setMediaArr(mediaArr)
+
+          setIsFront(true)
 
           // playAudio()
           // audioRef.play()//浏览器对于自动播放有限制 https://developer.chrome.com/blog/autoplay/
@@ -684,6 +690,7 @@ function App() {
         <button onclick={() => {
           store(getIdb(), 'clear', { storeName: 'file' })
           store(getIdb(), 'clear', { storeName: 'media' })
+          location.reload();
         }}>清理缓存</button>
         <button id="undo" onclick={() => {
           setUndo((undoObj) => {
@@ -705,6 +712,7 @@ function App() {
                     setLogsCsv((i: string[]) => [...i])
                     console.log('回撤pause模式', undoObj)
                   }
+                  setIsFront(true)
                 })
               }
             }
@@ -733,6 +741,7 @@ function App() {
               setLogsCsv((i) => [...i])
               return { ...i }
             })
+            setIsFront(true)
           })
         }}>{'暂停'}</button>
 
@@ -924,27 +933,36 @@ function App() {
                 </Show>
 
                 <br />
-                {
-                  (() => {
-                    const idx = getIndex()
-                    if (idx === undefined) {
-                      return 'today done'
-                    }
-                    return getFileData()?.card?.[idx]?.text?.['en']
-                  })()
-                }
-                <br />
-                <br />
-                {
-                  (() => {
-                    console.log('刷新')
-                    const idx = getIndex()
-                    if (idx === undefined) {
-                      return ''
-                    }
-                    return getFileData()?.card?.[idx]?.text?.['zh-cn']
-                  })()
-                }
+                <Show
+                  when={getIsFront()}
+                >
+                  {''}
+                </Show>
+                <Show
+                  when={!getIsFront()}
+                >
+                  {
+                    (() => {
+                      const idx = getIndex()
+                      if (idx === undefined) {
+                        return 'today done'
+                      }
+                      return getFileData()?.card?.[idx]?.text?.['en']
+                    })()
+                  }
+                  <br />
+                  <br />
+                  {
+                    (() => {
+                      console.log('刷新')
+                      const idx = getIndex()
+                      if (idx === undefined) {
+                        return ''
+                      }
+                      return getFileData()?.card?.[idx]?.text?.['zh-cn']
+                    })()
+                  }
+                </Show>
                 <br />
               </div>
             </div>
@@ -953,43 +971,57 @@ function App() {
 
         <br />
 
-        <Show when={getIndex() !== undefined}>
-          <button id="rating1" onClick={() => {
-            if (getIndex() === undefined) return
 
-            showRating(1, true)
+        <Show
+          when={getIsFront()}
+        >
+          <button onclick={() => {
+            setIsFront(false)
+          }}>{'show answer'}</button>
+        </Show>
 
-            setBeginAudio(0)
-          }}>
-            {getRating()[1] ? getRating()[1] : 'rating1'}
-          </button>
-          <button id="rating2" onClick={() => {
-            if (getIndex() === undefined) return
+        <Show
+          when={!getIsFront()}
+        >
 
-            showRating(2, true)
+          <Show when={getIndex() !== undefined}>
+            <button id="rating1" onClick={() => {
+              if (getIndex() === undefined) return
 
-            setBeginAudio(0)
-          }}>
-            {getRating()[2] ? getRating()[2] : 'rating2'}
-          </button>
-          <button id="rating3" onClick={() => {
-            if (getIndex() === undefined) return
+              showRating(1, true)
+              setBeginAudio(0)
+              setIsFront(true)
+            }}>
+              {getRating()[1] ? getRating()[1] : 'rating1'}
+            </button>
+            <button id="rating2" onClick={() => {
+              if (getIndex() === undefined) return
 
-            showRating(3, true)
+              showRating(2, true)
+              setBeginAudio(0)
+              setIsFront(true)
+            }}>
+              {getRating()[2] ? getRating()[2] : 'rating2'}
+            </button>
+            <button id="rating3" onClick={() => {
+              if (getIndex() === undefined) return
 
-            setBeginAudio(0)
-          }}>
-            {getRating()[3] ? getRating()[3] : 'rating3'}
-          </button>
-          <button id="rating4" onClick={() => {
-            if (getIndex() === undefined) return
+              showRating(3, true)
+              setBeginAudio(0)
+              setIsFront(true)
+            }}>
+              {getRating()[3] ? getRating()[3] : 'rating3'}
+            </button>
+            <button id="rating4" onClick={() => {
+              if (getIndex() === undefined) return
 
-            showRating(4, true)
-
-            setBeginAudio(0)
-          }}>
-            {getRating()[4] ? getRating()[4] : 'rating4'}
-          </button>
+              showRating(4, true)
+              setBeginAudio(0)
+              setIsFront(true)
+            }}>
+              {getRating()[4] ? getRating()[4] : 'rating4'}
+            </button>
+          </Show>
         </Show>
 
         <div ref={logRef} class='scroll'>
