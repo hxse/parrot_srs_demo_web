@@ -195,7 +195,7 @@ function App() {
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
 
-  const [getLimit,] = createSignal<number>(10)
+  const [getLimit,] = createSignal<number>(20)
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
   const [getLimitDue, setLimitDue] = createSignal<number>(0)
   const [getOldArrNum, setOldArrNum] = createSignal<number>(0)
