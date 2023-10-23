@@ -160,6 +160,8 @@ function App() {
   const csvField = 'card_id,review_time,review_rating,review_state,review_duration,timezone,day_start,deck_name,card_sort'
   const [getLogsCsv, setLogsCsv] = createSignal<Array<string>>([])
   const [getLogsCsvExtend, setLogsCsvExtent] = createSignal<Array<string>>([])//就是把logscsv根据pause净化一下
+  const [getIsLogsFilter, setIsLogsFilter] = createSignal<boolean>(true)//浏览器参数,不过不建议改,意义不大
+
   //https://github.com/open-spaced-repetition/fsrs-optimizer
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
@@ -541,35 +543,44 @@ function App() {
   }, { defer: true }));
 
   createEffect(on(getLogsCsv, async () => {
-    function runCsvExtend() {
-      //派生一个log对象,根据pause过滤,只用来导出和显示,不用来做持久化
-      const csvArr = getLogsCsv()
-      const parseIdArr = getFileData().card.filter((i: any) => i.pause).map((i: any) => i.card_id)
-      console.log(csvArr.length)
-      const csvArrExtend = csvArr.filter((c) => {
-        const res = parseIdArr.filter((i: any) => {
-          return c.split(',')[0] == i
-        })
-        return res.length == 0
-      })
-      setLogsCsvExtent([...csvArrExtend])
-    }
 
-    if (getIsCacheLog()) {
-      console.log('cache: getLogsCsv')
-      runCsvExtend()
-      setIsCacheLog(false)
-      return
-    }
-    if (getFileData().name) {
+    async function putCsv(csvArr: any[]) {
       const file = { 'name': "revlog.csv" }//这个最简单直接,不然太麻烦了
-      const csvArr = getLogsCsv()
       const str = csvArr.join('\n')
       const newFile = createFile(str, file.name)
       console.log('change: logsCsv', getFileData())
       await store(getIdb(), 'put', { storeName: "file", value: newFile, key: getCacheName(file, getFileData()) })
+    }
 
-      runCsvExtend()
+    async function runCsvExtend() {
+      //派生一个log对象,根据pause过滤,只用来导出和显示,不用来做持久化
+      if (getIsLogsFilter()) {
+        const csvArr = getLogsCsv()
+        const parseIdArr = getFileData().card.filter((i: any) => i.pause).map((i: any) => i.card_id)
+        console.log(csvArr.length)
+        const csvArrExtend = csvArr.filter((c) => {
+          const res = parseIdArr.filter((i: any) => {
+            return c.split(',')[0] == i
+          })
+          return res.length == 0
+        })
+
+        const newCsvArr = [...csvArrExtend]
+        setLogsCsvExtent(newCsvArr)
+        await putCsv(newCsvArr)
+      }
+    }
+
+    if (getIsCacheLog()) {
+      console.log('cache: getLogsCsv')
+      await runCsvExtend()
+      setIsCacheLog(false)
+      return
+    }
+
+    if (getFileData().name) {
+      await putCsv(getLogsCsv())
+      await runCsvExtend()
     } else {
       console.log('init: logsCsv', getFileData())
     }
@@ -751,7 +762,7 @@ function App() {
         </Show>
 
         <div>
-          {`idx: ${getIndex()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()}`}
+          {`idx: ${getIndex()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1}`}
         </div>
 
         <div class="text">
@@ -982,13 +993,26 @@ function App() {
         </Show>
 
         <div ref={logRef} class='scroll'>
-          <For each={getLogsCsvExtend()}>
-            {(log) => (
-              <div >
-                {log}
-              </div>
-            )}
-          </For>
+
+          <Show when={getIsLogsFilter()}>
+            <For each={getLogsCsvExtend()}>
+              {(log) => (
+                <div >
+                  {log}
+                </div>
+              )}
+            </For>
+          </Show>
+          <Show when={!getIsLogsFilter()}>
+            <For each={getLogsCsv()}>
+              {(log) => (
+                <div >
+                  {log}
+                </div>
+              )}
+            </For>
+          </Show>
+
         </div>
       </div>
     </>

@@ -6,7 +6,7 @@
   * 这些库可以在不支持File System Access API的时候,无缝退回到传统api,或者是后端服务
     * https://github.com/jimmywarting/native-file-system-adapter/
     * https://github.com/GoogleChromeLabs/browser-fs-access
-# 需要把日志导出成csv, 然后用python训练优化, 2000次以上reviews才有意义
+# 需要把日志导出成csv, 然后用python训练优化,至少1000条数据有效,2000次以上最好
   * https://github.com/open-spaced-repetition/fsrs-optimizer
   * https://github.com/open-spaced-repetition/fsrs-rs
   * 一种选择是简单点, 导出配置文件和日志文件就行了, 用谷歌colab优化
