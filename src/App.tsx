@@ -935,10 +935,18 @@ function App() {
             打开文件夹
           </button>
           <button onclick={() => {
+            if (!getIsLoad()) {
+              alert('请先导入文件')
+              return
+            }
             // runDownloadFile(fileData())
             runSaveFile(false)
           }}>保存</button>
           <button onclick={() => {
+            if (!getIsLoad()) {
+              alert('请先导入文件')
+              return
+            }
             // runDownloadFile(fileData())
             runSaveFile(true)
           }}>输出</button>
@@ -948,6 +956,10 @@ function App() {
             location.reload();
           }}>清空</button>
           <button id="undo" onclick={() => {
+            if (!getIsLoad()) {
+              alert('请先导入文件')
+              return
+            }
             setUndo((undoObj) => {
               const last = undoObj[undoObj.length - 1]
               if (last) {
@@ -975,6 +987,10 @@ function App() {
             })
           }}>回撤</button>
           <button id="pause" onclick={() => {
+            if (!getIsLoad()) {
+              alert('请先导入文件')
+              return
+            }
             batch(async () => {
               setFileData((i) => {
                 const idx = getIndex()
@@ -1001,10 +1017,18 @@ function App() {
           }}>{'暂停'}</button>
 
           <button id="statistic" onclick={() => {
+            if (!getIsLoad()) {
+              alert('请先导入文件')
+              return
+            }
             audioRef.pause()
             setIsStatistic(true)
           }}>{'统计'}</button>
           <button id="setting" onclick={() => {
+            if (!getIsLoad()) {
+              alert('请先导入文件')
+              return
+            }
             audioRef.pause()
             setIsSetting(true)
           }}>{'设置'}</button>
