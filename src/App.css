@@ -56,3 +56,43 @@ label {}
   /* white-space: nowrap; */
   display: none;
 }
+
+.parent {
+  /* position: relative; */
+}
+
+.settingPage-warp {
+  width: 99vw;
+  height: 99vh;
+  z-index: 100;
+  background-color: rgb(255, 255, 255);
+}
+
+.settingPage-block {
+  height: 5vh;
+}
+
+.settingPage {
+  /* position: relative; */
+  margin: 0 auto;
+  width: 85vw;
+  height: 85vh;
+  background-color: rgb(224, 224, 224);
+}
+
+.settingPage-div {
+  height: 75vh;
+  margin: 5px 0;
+}
+
+.settingPage-div label {
+  display: inline-block;
+  width: 100px;
+  text-align: right;
+}
+
+.settingPage-div input {
+  width: 10rem;
+}
+
+.settingPage-button {}

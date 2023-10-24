@@ -18,6 +18,8 @@
   * `python -m pip install fsrs-optimizer`
   * `python -m fsrs_optimizer "revlog.csv"`
   * 第一条的review_state为 0“的有效数据需要大于 100 条
+  * https://huggingface.co/spaces/open-spaced-repetition/fsrs4anki_app
+    * 上传csv, 然后选下时间戳就行了
   * https://colab.research.google.com/drive/1b8Ba_QMKfX2xsphl0vcF5rhiZRH3UzIb#scrollTo=y0vws_6YGy1n
   * https://colab.research.google.com/github/open-spaced-repetition/fsrs4anki/blob/main/fsrs4anki_optimizer.ipynb
   * https://github.com/open-spaced-repetition/fsrs-optimizer/issues/13
@@ -26,8 +28,9 @@
   * 日志按如下格式就行了
     ```csv
     card_id,review_time,review_rating,review_state,review_duration
-    20230723154504-duzgj0v,1691046464000,2,0,5
-    20230713230946-17j80ne,1691046470000,2,2,5
+    20230723154504-duzgj0v,1691046464000,2,0,0
+    20230713230946-17j80ne,1691046470000,2,2,0
+    20230729082314-xvdkcte,1691046482000,2,2,0
     ```
 # 数据格式
   * begin,undo,这些数据不会持久化到本地,刷新就消失了
@@ -53,6 +56,8 @@
   * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留,config.json里的index字段没有用可以删了,属于历史遗留
   * 支持树状目录,人性化的导入后合并牌组, 导出后合并牌组, 重命名牌组文件夹, 调整牌组顺序, 目前不弄了, 太花里胡哨了,用命令行工具加上手动调整解决吧
     * 不过每张卡片都有deck_name字段, 以后有空弄是可以的
+    * 快捷键设置可以放setting里,不过目前懒得写了
+    * 统计也可以写一下,目前懒的写了
 # 相关命令
   * https://github.com/hxse/parrot_fashion
     * 生成牌组

@@ -2,19 +2,19 @@ import { Rating, Card, SchedulingInfo, FSRS } from "fsrs.js"
 // import { State, ReviewLog,   SchedulingCards, Params } from "fsrs.js"
 
 let fsrs = new FSRS;
+export const fsrsGlobal = fsrs
 
 let rating = Rating;
 
 
-export function initFsrs(w: number[] | undefined, request_retention: number) {
+export function initFsrs(w: number[] | undefined, request_retention: number | undefined) {
     // w=[0.4, 0.6, 2.4, 5.8, 4.93, 0.94, 0.86, 0.01, 1.49, 0.14, 0.94, 2.18, 0.05, 0.34, 1.26, 0.29, 2.61]
-    if (w) {
+    console.log('init fsrs', w, request_retention)
+    if (w !== undefined) {
         fsrs.p.w = w
-        console.log(fsrs.p.w)
     }
-    if (request_retention) {
+    if (request_retention !== undefined) {
         fsrs.p.request_retention = request_retention
-        console.log('request_retention', request_retention)
     }
 }
 

@@ -5,7 +5,7 @@ import './App.css'
 import { openFile, openDir, getFile, parseDir } from "./pick_file.ts"
 import { store, createIdb } from './idb_io.ts'
 
-import { initFsrs, newCard, schedulingCard, str2json, json2str } from "./fsrs-api.ts"
+import { initFsrs, newCard, schedulingCard, str2json, json2str, fsrsGlobal } from "./fsrs-api.ts"
 
 import { createZip, createFile } from './convert-zip.ts'
 import jsZip from 'jszip'
@@ -38,6 +38,9 @@ function preProcessing(obj: any) {
   obj.name = obj.name.replaceAll(' ', '_')
   if (!obj.index) {
     obj.index = 0
+  }
+  if (!obj.setting) {
+    obj.setting = {}
   }
 }
 
@@ -107,6 +110,9 @@ async function cleanUserData(fileObj: any, fk: string) {
         delete c.pause
       }
     }
+    if (obj.setting) {
+      obj.setting = {}
+    }
     const str = json2str(obj)
     const newfileObj = createFile(str, name)
     return newfileObj
@@ -159,12 +165,29 @@ function getDeck(fdObj: any) {
   return res
 }
 
+const settingDefault = {
+  limit: 20,
+  undoMax: 6,
+  step: 2,
+  stepLong: 4,
+  retention: fsrsGlobal.p.request_retention,
+  weights: fsrsGlobal.p.w
+}
+
+const settingRef: any = {
+  limitRef: undefined,
+  undoMaxRef: undefined,
+  stepRef: undefined,
+  stepLongRef: undefined,
+  retentionRef: undefined,
+  weightsRef: undefined,
+}
+
 let audioRef: any
 let beginRef: any
 let startOffsetRef: any
 let endOffsetRef: any
 let logRef: any
-
 function App() {
   //test参数是用来测试的
   const [getTestDate,] = createSignal<boolean>(false)
@@ -195,7 +218,7 @@ function App() {
   const [getIsCacheFile, setIsCacheFile] = createSignal<boolean>(false)
   const [getIsCacheLog, setIsCacheLog] = createSignal<boolean>(false)
 
-  const [getLimit,] = createSignal<number>(20)
+  const [getLimit, setLimit] = createSignal<number>(settingDefault.limit)// setting参数
   const [getLimitCur, setLimitCur] = createSignal<number>(0)
   const [getLimitDue, setLimitDue] = createSignal<number>(0)
   const [getOldArrNum, setOldArrNum] = createSignal<number>(0)
@@ -205,10 +228,16 @@ function App() {
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
   const [getUndo, setUndo] = createSignal<any[]>([])
-  const [getUndoMax,] = createSignal<number>(10)//大于等于0的整数
+  const [getUndoMax, setUndoMax] = createSignal<number>(settingDefault.undoMax)//大于等于0的整数
 
-  const [getStep,] = createSignal<number>(1)//大于等于0
-  const [getStepLong,] = createSignal<number>(2)//大于等于0
+  const [getStep, setStep] = createSignal<number>(settingDefault.step)//大于等于0
+  const [getStepLong, setStepLong] = createSignal<number>(settingDefault.stepLong)//大于等于0
+  const [getRetention, setRetention] = createSignal<number>(settingDefault.retention)//大于等于0,小于等于1
+  const [getWeights, setWeights] = createSignal<number[]>(settingDefault.weights)//fsrs参数,数组用逗号分割
+
+
+  const [getIsSetting, setIsSetting] = createSignal<boolean>(false)
+  const [getIsStatistic, setIsStatistic] = createSignal<boolean>(false)
 
 
   // const [getStartOffset, setStartOffset] = createSignal<number>(0)
@@ -221,6 +250,39 @@ function App() {
   const [getLockAudio, setLockAudio] = createSignal<boolean>(true)
   const [getBeginAudio, setBeginAudio] = createSignal<number>(0)
 
+
+  function initSetting(dfObj: any) {
+    if (dfObj.setting.limit !== undefined) {
+      setLimit(dfObj.setting.limit)
+    } else {
+      setLimit(settingDefault.limit)
+    }
+    if (dfObj.setting.undoMax !== undefined) {
+      setUndoMax(dfObj.setting.undoMax)
+    } else {
+      setUndoMax(settingDefault.undoMax)
+    }
+    if (dfObj.setting.step !== undefined) {
+      setStep(dfObj.setting.step)
+    } else {
+      setStep(settingDefault.step)
+    }
+    if (dfObj.setting.stepLong !== undefined) {
+      setStepLong(dfObj.setting.stepLong)
+    } else {
+      setStepLong(settingDefault.stepLong)
+    }
+    if (dfObj.setting.retention !== undefined) {
+      setRetention(dfObj.setting.retention)
+    } else {
+      setRetention(settingDefault.retention)
+    }
+    if (dfObj.setting.weights !== undefined) {
+      setWeights(dfObj.setting.weights)
+    } else {
+      setWeights(settingDefault.weights)
+    }
+  }
 
   function getBegin(startTime: any, endTime: any, data: any) {
     if (data.begin == 0) {
@@ -351,6 +413,9 @@ function App() {
     }
 
     if (lCur.length >= getLimit()) {
+      if (lCur.length - lDue.length >= getLimit()) {
+        return undefined
+      }
       if (lDue.length > 0) {
         return lDue[0].idx
       }
@@ -414,6 +479,10 @@ function App() {
         batch(async () => {
           setIsLoad(true)
           setFileData(obj)
+
+          initSetting(obj)
+
+          initFsrs(getWeights(), getRetention())
 
           setDeckArr(getDeck(obj))
           // setFileObj(file)
@@ -491,7 +560,6 @@ function App() {
     const idb = await createIdb()
     setIdb(idb)
 
-    initFsrs(undefined, 0.9)
 
     const res = await store(getIdb(), 'getAllKeys', { storeName: 'file' })
     const fileArr: any[] = []
@@ -520,6 +588,10 @@ function App() {
           setIsCacheFile(true)
           // setFileObj(file)
           setFileData(obj)
+
+          initSetting(obj)
+          initFsrs(getWeights(), getRetention())
+
           setDeckArr(getDeck(obj))
           if (getTestPreview()) {
             setIndex(obj.index)
@@ -687,7 +759,7 @@ function App() {
           review_time: review_log['review'].getTime(),
           review_rating: review_log['rating'],
           review_state: review_log['state'],
-          review_duration: 5,
+          review_duration: 0,
           timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
           day_start: 8,
           deck_name: getFileData().card[idx].deck_name.replaceAll(',', ' '),
@@ -715,408 +787,556 @@ function App() {
   }
 
   return (
-    <>
-      <div class="card">
-        <button onClick={readZip}>
-          打开文件
-        </button>
-        <button onClick={async () => {
-          const dirHandle = await openDir()
-          await readDir(dirHandle, 'dir')
-        }}>
-          打开文件夹
-        </button>
-        <button onclick={() => {
-          // runDownloadFile(fileData())
-          runSaveFile(false)
-        }}>保存</button>
-        <button onclick={() => {
-          // runDownloadFile(fileData())
-          runSaveFile(true)
-        }}>保存不带数据</button>
-        <button onclick={() => {
-          store(getIdb(), 'clear', { storeName: 'file' })
-          store(getIdb(), 'clear', { storeName: 'media' })
-          location.reload();
-        }}>清理缓存</button>
-        <button id="undo" onclick={() => {
-          setUndo((undoObj) => {
-            const last = undoObj[undoObj.length - 1]
-            if (last) {
-              if (last.act == "update" || last.act == "pause") {
-                const fdObj = str2json(last['config.json'])
-                batch(async () => {
-                  setFileData({ ...fdObj })
-                  if (getTestPreview()) {
-                    setIndex(fdObj.index)
-                  } else {
-                    setIndex(reSetIndex(fdObj))
-                  }
-                  if (last.act == "update") {
-                    console.log('回撤update模式', undoObj)
-                    setLogsCsv((i: string[]) => i.slice(0, - 1))
-                  } else {
-                    setLogsCsv((i: string[]) => [...i])
-                    console.log('回撤pause模式', undoObj)
-                  }
-                  setIsFront(true)
-                })
-              }
-            }
-            return addUndo('delete', undoObj, undefined, getUndoMax())
-          })
-        }}>回撤</button>
-        <button id="pause" onclick={() => {
-          batch(async () => {
-            setFileData((i) => {
-              const idx = getIndex()
-              if (idx == undefined) {
-                return i
-              }
+    <div class="parent">
+      <Show when={getIsSetting()}>
 
-              setUndo((undoObj) => {
-                return addUndo('pause', undoObj, { ...i }, getUndoMax())
-              })
-
-              i.card[idx].pause = true
-
-              if (getTestPreview()) {
-                setIndex(idx)
-              } else {
-                setIndex(reSetIndex(i))
-              }
-              setLogsCsv((i) => [...i])
-              return { ...i }
-            })
-            setIsFront(true)
-          })
-        }}>{'暂停'}</button>
-
-        <Show when={getTestDate()}>
-          <button onClick={() => {
-            setIndex((index) => {
-              if (index === undefined || index === null) {
-                return index
-              }
-              index = index - 1 < 0 ? 0 : index - 1
-              return index
-            })
-          }}>
-            prev
-          </button>
-          <button onClick={() => {
-            setIndex((index) => {
-              if (index === undefined || index === null) {
-                return index
-              }
-              index = index + 1 >= getFileData().card.length - 1 ? getFileData().card.length - 1 : index + 1
-              return index
-            })
-          }}>
-            next
-          </button>
-        </Show>
-
-        <div>
-          {`idx: ${getIndex()} deck: ${getDeckIdx()}/${getDeckCount()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1}`}
-        </div>
-
-        <div class="text">
-          <Show
-            when={getIsLoad()}
-            fallback={<div class="wait">please select a local file</div>}
-          >
-
-            <div class="text-child">
-              <div>
+        <div class="settingPage-warp">
+          <div class="settingPage-block">
+          </div>
+          <div class="settingPage">
+            <div class='settingPage-div'>
+              设置页面
+              <br />
+              <div class='settingPage-div-input'>
                 <div>
-                  <audio id="myAudio" ref={audioRef} controls src={
-                    ((): any => {
-                      const idx = getIndex()
-                      return getAudio(idx === undefined ? undefined : {
-                        deck_name: getFileData()?.card?.[idx]?.deck_name,
-                        audio_name: getFileData()?.card?.[idx]?.audio_name
-                      })
-                    })()
-                  }
-                    onTimeUpdate={
-                      () => {
-                        const idx = getIndex()
-                        audioUpdate(idx === undefined ? undefined : {
-                          startTime: getFileData()?.card?.[idx]?.start,
-                          endTime: getFileData()?.card?.[idx]?.end,
-                          startOffset: getFileData()?.card?.[idx]?.startOffset,
-                          endOffset: getFileData()?.card?.[idx]?.endOffset,
-                          begin: getBeginAudio()
-                        })
-                      }
-                    }
-                  >
-                    {/* <source id="myAudio" src={getAudio()} type="audio/mp3" ></source> */}
-                  </audio>
+                  <label >limit </label>
+                  <input ref={settingRef.limitRef} type="number" value={getLimit()} />
                 </div>
                 <div>
-                  <button
-                    id="play"
-                    onclick={
-                      () => {
-                        const idx = getIndex()
-                        audioPlay(idx === undefined ? undefined : {
-                          startTime: getFileData()?.card?.[idx]?.start,
-                          endTime: getFileData()?.card?.[idx]?.end,
-                          startOffset: getFileData()?.card?.[idx]?.startOffset,
-                          endOffset: getFileData()?.card?.[idx]?.endOffset,
-                          begin: getBeginAudio()
-                        })
-                      }
-                    }
-                  >play</button>
-                  <button
-                    id="backward"
-                    onclick={
-                      () => {
-                        audioRef.currentTime -= getStep()
-                      }
-                    }
-                  >{'<-'}</button>
-                  <button
-                    id="forward"
-                    onclick={
-                      () => {
-                        audioRef.currentTime += getStep()
-                      }
-                    }
-                  >{'->'}</button>
-                  <button
-                    id="backward2"
-                    onclick={
-                      () => {
-                        audioRef.currentTime -= getStepLong()
-                      }
-                    }
-                  >{'<--'}</button>
-                  <button
-                    id="forward2"
-                    onclick={
-                      () => {
-                        audioRef.currentTime += getStepLong()
-                      }
-                    }
-                  >{'-->'}</button>
-                  <br />
-                  <label > lock</label>
-                  <input id="lock" type="checkbox" checked={getLockAudio()} onclick={() => {
-                    setLockAudio(!getLockAudio())
-                  }} />
-
-                  <label > {'||>'}</label>
-                  <input id="startOffset" ref={startOffsetRef} class='offset' type="number" step="0.1" value={
-                    (() => {
-                      const idx = getIndex()
-                      if (!idx) {
-                        return 0
-                      }
-                      return !getFileData()?.card?.[idx]?.startOffset ? 0 : getFileData()?.card?.[idx]?.startOffset
-                    })()
-                  } onInput={(e) => {
-                    batch(async () => {
-                      setFileData((i) => {
-                        const idx = getIndex()
-                        if (idx == undefined) {
-                          return i
-                        }
-                        if (parseFloat(e.target.value) == 0) {
-                          delete i.card[idx].startOffset
-                        } else {
-                          i.card[idx].startOffset = e.target.value
-                        }
-                        return { ...i }
-                      })
-                    })
-                    startOffsetRef.focus()
-                  }} />
-                  <span>(s) </span>
-                  <label > {'<||'}</label>
-                  <input id="endOffset" ref={endOffsetRef} class='offset' type="number" step="0.1" value={
-                    (() => {
-                      const idx = getIndex()
-                      if (!idx) {
-                        return 0
-                      }
-                      return !getFileData()?.card?.[idx]?.endOffset ? 0 : getFileData()?.card?.[idx]?.endOffset
-                    })()
-                  } onInput={(e) => {
-                    console.log(e.target.value)
-                    batch(async () => {
-                      setFileData((i) => {
-                        const idx = getIndex()
-                        if (idx == undefined) {
-                          return i
-                        }
-                        if (parseFloat(e.target.value) == 0) {
-                          delete i.card[idx].endOffset
-                        } else {
-                          i.card[idx].endOffset = e.target.value
-                        }
-                        return { ...i }
-                      })
-                    })
-                    endOffsetRef.focus()
-                  }} />
-                  <span>(s)</span>
-                  <label > {'||'} </label>
-                  <input id="begin" ref={beginRef} class='offset' type="number" step="0.1" min="0" max="1" value={getBeginAudio()} onInput={(e) => {
-                    console.log(e.target.value)
-                    if (parseFloat(e.target.value) > 1) {
-                      e.target.value = "0." + parseFloat(e.target.value)
-                    }
-                    setBeginAudio(parseFloat(e.target.value))
-                    beginRef.focus()
-                  }} />
-                  <span>(%)</span>
+                  <label >undoMax </label>
+                  <input ref={settingRef.undoMaxRef} type="number" value={getUndoMax()} />
+                </div>
+                <div>
+                  <label >step </label>
+                  <input ref={settingRef.stepRef} type="number" value={getStep()} />
+                </div>
+                <div>
+                  <label >stepLong </label>
+                  <input ref={settingRef.stepLongRef} type="number" value={getStepLong()} />
                 </div>
 
-                <Show
-                  when={getIsWarning()}
-                >
-                  <div class="warning">Warning: 时间戳偏移量调过头了............</div>
-                </Show>
-
-                <br />
-                <div class='deck'>
-                  {
-                    ((): any => {
-                      const idx = getIndex()
-                      if (idx === undefined) {
-                        return ""
-                      }
-                      return (<div> {getFileData()?.card?.[idx]?.deck_name.split("::").at(-1)}</div>)
-
-                    })()
-                  }
+                <div>
+                  <label > retention </label>
+                  <input ref={settingRef.retentionRef} type="number" min={0} max={1} step={0.1} value={getRetention()} />
                 </div>
 
-                <br />
-                <Show
-                  when={getIsFront()}
-                >
-                  {''}
-                </Show>
-
-
-
-                <div>{
-                  (() => {
-                    const idx = getIndex()
-                    if (idx === undefined) {
-                      audioRef.pause()
-                      return (
-                        <div>{'today done'}</div>
-                      )
-                    }
-                    else {
-                      return (
-                        <Show when={!getIsFront()}>
-                          {
-                            getFileData()?.card?.[idx]?.text?.['en']
-                          }
-                          <br />
-                          <br />
-                          {
-                            getFileData()?.card?.[idx]?.text?.['zh-cn']
-                          }
-                        </Show>
-                      )
-                    }
-                  })()
-                }
+                <div>
+                  <label >fsrs weights</label>
+                  <textarea ref={settingRef.weightsRef} rows="5" cols="20" value={getWeights().join(',')}></textarea>
                 </div>
 
-                <br />
+
+                <div>
+                  {getFileData()?.setting}
+                </div>
               </div>
             </div>
-          </Show>
+            <div class='settingPage-button'>
+              <button onclick={
+                () => setIsSetting(false)
+              }>取消</button>
+              <button onclick={
+                () => {
+                  batch(async () => {
+                    const limitValue = parseInt(settingRef.limitRef.value)
+                    if (limitValue) {
+                      setLimit(limitValue)
+                      setFileData((i) => {
+                        i.setting.limit = limitValue
+                        return { ...i }
+                      })
+                    }
+
+                    const undoValue = parseInt(settingRef.undoMaxRef.value)
+                    if (undoValue) {
+                      setUndoMax(undoValue)
+                      setFileData((i) => {
+                        i.setting.undoMax = undoValue
+                        return { ...i }
+                      })
+                      setUndo((i) => [...i.slice(-undoValue)])
+                    }
+
+                    const stepValue = parseFloat(settingRef.stepRef.value)
+                    if (stepValue) {
+                      setStep(stepValue)
+                      setFileData((i) => {
+                        i.setting.step = stepValue
+                        return { ...i }
+                      })
+                    }
+
+                    const stepLongValue = parseFloat(settingRef.stepLongRef.value)
+                    if (stepLongValue) {
+                      setStepLong(stepLongValue)
+                      setFileData((i) => {
+                        i.setting.stepLong = stepLongValue
+                        return { ...i }
+                      })
+                    }
+
+                    const retentionValue = parseFloat(settingRef.retentionRef.value)
+                    if (retentionValue) {
+                      setRetention(retentionValue)
+                      setFileData((i) => {
+                        i.setting.retention = retentionValue
+                        return { ...i }
+                      })
+                      initFsrs(undefined, retentionValue)
+                    }
+
+                    const weightsValue = settingRef.weightsRef.value.split(',').map((i: string) => parseFloat(i.trim()))
+                    if (weightsValue) {
+                      setWeights(weightsValue)
+                      setFileData((i) => {
+                        i.setting.weights = weightsValue
+                        return { ...i }
+                      })
+                      initFsrs(weightsValue, undefined)
+                    }
+
+                    setIsSetting(false)
+                  })
+                }
+              }>完成</button>
+            </div>
+          </div>
         </div>
+      </Show>
 
-        <br />
+      <Show when={getIsStatistic()}>
 
-
-        <Show
-          when={getIsFront() && getIndex() !== undefined}
-        >
-          <button id="showAnswer" class='showAnswer' onclick={() => {
-            setIsFront(false)
-          }}>{'show answer'}</button>
-        </Show>
-
-        <Show
-          when={!getIsFront()}
-        >
-
-          <Show when={getIndex() !== undefined}>
-            <button id="rating1" onClick={() => {
-              if (getIndex() === undefined) return
-
-              showRating(1, true)
-              setBeginAudio(0)
-              setIsFront(true)
-            }}>
-              {getRating()[1] ? getRating()[1] : 'rating1'}
-            </button>
-            <button id="rating2" onClick={() => {
-              if (getIndex() === undefined) return
-
-              showRating(2, true)
-              setBeginAudio(0)
-              setIsFront(true)
-            }}>
-              {getRating()[2] ? getRating()[2] : 'rating2'}
-            </button>
-            <button id="rating3" onClick={() => {
-              if (getIndex() === undefined) return
-
-              showRating(3, true)
-              setBeginAudio(0)
-              setIsFront(true)
-            }}>
-              {getRating()[3] ? getRating()[3] : 'rating3'}
-            </button>
-            <button id="rating4" onClick={() => {
-              if (getIndex() === undefined) return
-
-              showRating(4, true)
-              setBeginAudio(0)
-              setIsFront(true)
-            }}>
-              {getRating()[4] ? getRating()[4] : 'rating4'}
-            </button>
-          </Show>
-        </Show>
-
-        <div ref={logRef} class='scroll'>
-
-          <Show when={getIsLogsFilter()}>
-            <For each={getLogsCsvExtend()}>
-              {(log) => (
-                <div >
-                  {log}
-                </div>
-              )}
-            </For>
-          </Show>
-          <Show when={!getIsLogsFilter()}>
-            <For each={getLogsCsv()}>
-              {(log) => (
-                <div >
-                  {log}
-                </div>
-              )}
-            </For>
-          </Show>
-
+        <div class="settingPage-warp">
+          <div class="settingPage-block"></div>
+          <div class="settingPage">
+            <div class='settingPage-div'>
+              统计页面
+              <br />
+            </div>
+            <div class='settingPage-button'>
+              <button onclick={
+                () => setIsStatistic(false)
+              }>返回</button>
+            </div>
+          </div>
         </div>
-      </div>
-    </>
+      </Show>
+
+      <Show when={!getIsSetting() && !getIsStatistic()}>
+
+        <div class="card">
+          <button onClick={readZip}>
+            打开文件
+          </button>
+          <button onClick={async () => {
+            const dirHandle = await openDir()
+            await readDir(dirHandle, 'dir')
+          }}>
+            打开文件夹
+          </button>
+          <button onclick={() => {
+            // runDownloadFile(fileData())
+            runSaveFile(false)
+          }}>保存</button>
+          <button onclick={() => {
+            // runDownloadFile(fileData())
+            runSaveFile(true)
+          }}>输出</button>
+          <button onclick={() => {
+            store(getIdb(), 'clear', { storeName: 'file' })
+            store(getIdb(), 'clear', { storeName: 'media' })
+            location.reload();
+          }}>清空</button>
+          <button id="undo" onclick={() => {
+            setUndo((undoObj) => {
+              const last = undoObj[undoObj.length - 1]
+              if (last) {
+                if (last.act == "update" || last.act == "pause") {
+                  const fdObj = str2json(last['config.json'])
+                  batch(async () => {
+                    setFileData({ ...fdObj })
+                    if (getTestPreview()) {
+                      setIndex(fdObj.index)
+                    } else {
+                      setIndex(reSetIndex(fdObj))
+                    }
+                    if (last.act == "update") {
+                      console.log('回撤update模式', undoObj)
+                      setLogsCsv((i: string[]) => i.slice(0, - 1))
+                    } else {
+                      setLogsCsv((i: string[]) => [...i])
+                      console.log('回撤pause模式', undoObj)
+                    }
+                    setIsFront(true)
+                  })
+                }
+              }
+              return addUndo('delete', undoObj, undefined, getUndoMax())
+            })
+          }}>回撤</button>
+          <button id="pause" onclick={() => {
+            batch(async () => {
+              setFileData((i) => {
+                const idx = getIndex()
+                if (idx == undefined) {
+                  return i
+                }
+
+                setUndo((undoObj) => {
+                  return addUndo('pause', undoObj, { ...i }, getUndoMax())
+                })
+
+                i.card[idx].pause = true
+
+                if (getTestPreview()) {
+                  setIndex(idx)
+                } else {
+                  setIndex(reSetIndex(i))
+                }
+                setLogsCsv((i) => [...i])
+                return { ...i }
+              })
+              setIsFront(true)
+            })
+          }}>{'暂停'}</button>
+
+          <button id="statistic" onclick={() => {
+            audioRef.pause()
+            setIsStatistic(true)
+          }}>{'统计'}</button>
+          <button id="setting" onclick={() => {
+            audioRef.pause()
+            setIsSetting(true)
+          }}>{'设置'}</button>
+
+
+          <Show when={getTestDate()}>
+            <button onClick={() => {
+              setIndex((index) => {
+                if (index === undefined || index === null) {
+                  return index
+                }
+                index = index - 1 < 0 ? 0 : index - 1
+                return index
+              })
+            }}>
+              prev
+            </button>
+            <button onClick={() => {
+              setIndex((index) => {
+                if (index === undefined || index === null) {
+                  return index
+                }
+                index = index + 1 >= getFileData().card.length - 1 ? getFileData().card.length - 1 : index + 1
+                return index
+              })
+            }}>
+              next
+            </button>
+          </Show>
+
+          <div>
+            {`idx: ${getIndex()} deck: ${getDeckIdx()}/${getDeckCount()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1}`}
+          </div>
+
+          <div class="text">
+            <Show
+              when={getIsLoad()}
+              fallback={<div class="wait">please select a local file</div>}
+            >
+
+              <div class="text-child">
+                <div>
+                  <div>
+                    <audio id="myAudio" ref={audioRef} controls src={
+                      ((): any => {
+                        const idx = getIndex()
+                        return getAudio(idx === undefined ? undefined : {
+                          deck_name: getFileData()?.card?.[idx]?.deck_name,
+                          audio_name: getFileData()?.card?.[idx]?.audio_name
+                        })
+                      })()
+                    }
+                      onTimeUpdate={
+                        () => {
+                          const idx = getIndex()
+                          audioUpdate(idx === undefined ? undefined : {
+                            startTime: getFileData()?.card?.[idx]?.start,
+                            endTime: getFileData()?.card?.[idx]?.end,
+                            startOffset: getFileData()?.card?.[idx]?.startOffset,
+                            endOffset: getFileData()?.card?.[idx]?.endOffset,
+                            begin: getBeginAudio()
+                          })
+                        }
+                      }
+                    >
+                      {/* <source id="myAudio" src={getAudio()} type="audio/mp3" ></source> */}
+                    </audio>
+                  </div>
+                  <div>
+                    <button
+                      id="play"
+                      onclick={
+                        () => {
+                          const idx = getIndex()
+                          audioPlay(idx === undefined ? undefined : {
+                            startTime: getFileData()?.card?.[idx]?.start,
+                            endTime: getFileData()?.card?.[idx]?.end,
+                            startOffset: getFileData()?.card?.[idx]?.startOffset,
+                            endOffset: getFileData()?.card?.[idx]?.endOffset,
+                            begin: getBeginAudio()
+                          })
+                        }
+                      }
+                    >play</button>
+                    <button
+                      id="backward"
+                      onclick={
+                        () => {
+                          audioRef.currentTime -= getStep()
+                        }
+                      }
+                    >{'<-'}</button>
+                    <button
+                      id="forward"
+                      onclick={
+                        () => {
+                          audioRef.currentTime += getStep()
+                        }
+                      }
+                    >{'->'}</button>
+                    <button
+                      id="backward2"
+                      onclick={
+                        () => {
+                          audioRef.currentTime -= getStepLong()
+                        }
+                      }
+                    >{'<--'}</button>
+                    <button
+                      id="forward2"
+                      onclick={
+                        () => {
+                          audioRef.currentTime += getStepLong()
+                        }
+                      }
+                    >{'-->'}</button>
+                    <br />
+                    <label > lock</label>
+                    <input id="lock" type="checkbox" checked={getLockAudio()} onclick={() => {
+                      setLockAudio(!getLockAudio())
+                    }} />
+
+                    <label > {'||>'}</label>
+                    <input id="startOffset" ref={startOffsetRef} class='offset' type="number" step="0.1" value={
+                      (() => {
+                        const idx = getIndex()
+                        if (!idx) {
+                          return 0
+                        }
+                        return !getFileData()?.card?.[idx]?.startOffset ? 0 : getFileData()?.card?.[idx]?.startOffset
+                      })()
+                    } onInput={(e) => {
+                      batch(async () => {
+                        setFileData((i) => {
+                          const idx = getIndex()
+                          if (idx == undefined) {
+                            return i
+                          }
+                          if (parseFloat(e.target.value) == 0) {
+                            delete i.card[idx].startOffset
+                          } else {
+                            i.card[idx].startOffset = e.target.value
+                          }
+                          return { ...i }
+                        })
+                      })
+                      startOffsetRef.focus()
+                    }} />
+                    <span>(s) </span>
+                    <label > {'<||'}</label>
+                    <input id="endOffset" ref={endOffsetRef} class='offset' type="number" step="0.1" value={
+                      (() => {
+                        const idx = getIndex()
+                        if (!idx) {
+                          return 0
+                        }
+                        return !getFileData()?.card?.[idx]?.endOffset ? 0 : getFileData()?.card?.[idx]?.endOffset
+                      })()
+                    } onInput={(e) => {
+                      console.log(e.target.value)
+                      batch(async () => {
+                        setFileData((i) => {
+                          const idx = getIndex()
+                          if (idx == undefined) {
+                            return i
+                          }
+                          if (parseFloat(e.target.value) == 0) {
+                            delete i.card[idx].endOffset
+                          } else {
+                            i.card[idx].endOffset = e.target.value
+                          }
+                          return { ...i }
+                        })
+                      })
+                      endOffsetRef.focus()
+                    }} />
+                    <span>(s)</span>
+                    <label > {'||'} </label>
+                    <input id="begin" ref={beginRef} class='offset' type="number" step="0.1" min="0" max="1" value={getBeginAudio()} onInput={(e) => {
+                      console.log(e.target.value)
+                      if (parseFloat(e.target.value) > 1) {
+                        e.target.value = "0." + parseFloat(e.target.value)
+                      }
+                      setBeginAudio(parseFloat(e.target.value))
+                      beginRef.focus()
+                    }} />
+                    <span>(%)</span>
+                  </div>
+
+                  <Show
+                    when={getIsWarning()}
+                  >
+                    <div class="warning">Warning: 时间戳偏移量调过头了............</div>
+                  </Show>
+
+                  <br />
+                  <div class='deck'>
+                    {
+                      ((): any => {
+                        const idx = getIndex()
+                        if (idx === undefined) {
+                          return ""
+                        }
+                        return (<div> {getFileData()?.card?.[idx]?.deck_name.split("::").at(-1)}</div>)
+
+                      })()
+                    }
+                  </div>
+
+                  <br />
+                  <Show
+                    when={getIsFront()}
+                  >
+                    {''}
+                  </Show>
+
+
+
+                  <div>{
+                    (() => {
+                      const idx = getIndex()
+                      if (idx === undefined) {
+                        audioRef.pause()
+                        return (
+                          <div>{'today done'}</div>
+                        )
+                      }
+                      else {
+                        return (
+                          <Show when={!getIsFront()}>
+                            {
+                              getFileData()?.card?.[idx]?.text?.['en']
+                            }
+                            <br />
+                            <br />
+                            {
+                              getFileData()?.card?.[idx]?.text?.['zh-cn']
+                            }
+                          </Show>
+                        )
+                      }
+                    })()
+                  }
+                  </div>
+
+                  <br />
+                </div>
+              </div>
+            </Show>
+          </div>
+
+          <br />
+
+
+          <Show
+            when={getIsFront() && getIndex() !== undefined}
+          >
+            <button id="showAnswer" class='showAnswer' onclick={() => {
+              setIsFront(false)
+            }}>{'show answer'}</button>
+          </Show>
+
+          <Show
+            when={!getIsFront()}
+          >
+
+            <Show when={getIndex() !== undefined}>
+              <button id="rating1" onClick={() => {
+                if (getIndex() === undefined) return
+
+                showRating(1, true)
+                setBeginAudio(0)
+                setIsFront(true)
+              }}>
+                {getRating()[1] ? getRating()[1] : 'rating1'}
+              </button>
+              <button id="rating2" onClick={() => {
+                if (getIndex() === undefined) return
+
+                showRating(2, true)
+                setBeginAudio(0)
+                setIsFront(true)
+              }}>
+                {getRating()[2] ? getRating()[2] : 'rating2'}
+              </button>
+              <button id="rating3" onClick={() => {
+                if (getIndex() === undefined) return
+
+                showRating(3, true)
+                setBeginAudio(0)
+                setIsFront(true)
+              }}>
+                {getRating()[3] ? getRating()[3] : 'rating3'}
+              </button>
+              <button id="rating4" onClick={() => {
+                if (getIndex() === undefined) return
+
+                showRating(4, true)
+                setBeginAudio(0)
+                setIsFront(true)
+              }}>
+                {getRating()[4] ? getRating()[4] : 'rating4'}
+              </button>
+            </Show>
+          </Show>
+
+          <div ref={logRef} class='scroll'>
+
+            <Show when={getIsLogsFilter()}>
+              <For each={getLogsCsvExtend()}>
+                {(log) => (
+                  <div >
+                    {log}
+                  </div>
+                )}
+              </For>
+            </Show>
+            <Show when={!getIsLogsFilter()}>
+              <For each={getLogsCsv()}>
+                {(log) => (
+                  <div >
+                    {log}
+                  </div>
+                )}
+              </For>
+            </Show>
+
+          </div>
+        </div>
+      </Show>
+
+    </div>
   )
 }
 
