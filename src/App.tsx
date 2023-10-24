@@ -11,6 +11,7 @@ import { createZip, createFile } from './convert-zip.ts'
 import jsZip from 'jszip'
 import { dateTimeDiff } from "date-differencer";
 import { init_keyboard } from './keyboard.ts'
+import { DaysBetween, generateVolatileDue } from './volatile.tsx'
 
 function sameDay(date1: Date, date2: Date) {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -75,7 +76,7 @@ function reSetArr(fileData: any) {
 
   for (const i of _oldArr) {
     const now = new Date()
-    const due = fileData.card[i].fsrs.due
+    const due = fileData.card[i].volatileDue
     const diffTime = now.getTime() - due.getTime()
     if (diffTime >= 0) {
       waitArr.push(i)
@@ -170,6 +171,8 @@ const settingDefault = {
   undoMax: 6,
   step: 2,
   stepLong: 4,
+  volatile: 0.1,
+  enableVolatile: true,
   retention: fsrsGlobal.p.request_retention,
   weights: fsrsGlobal.p.w
 }
@@ -179,6 +182,8 @@ const settingRef: any = {
   undoMaxRef: undefined,
   stepRef: undefined,
   stepLongRef: undefined,
+  volatileRef: undefined,
+  enableVolatileRef: undefined,
   retentionRef: undefined,
   weightsRef: undefined,
 }
@@ -224,6 +229,9 @@ function App() {
   const [getOldArrNum, setOldArrNum] = createSignal<number>(0)
   const [getWaitArrNum, setWaitArrNum] = createSignal<number>(0)
   const [getPauseArrNum, setPauseArrNum] = createSignal<number>(0)
+
+  const [getVolatile, setVolatile] = createSignal<number>(settingDefault.volatile)
+  const [getEnableVolatile, setEnableVolatile] = createSignal<boolean>(settingDefault.enableVolatile)
 
   const [getIsWarning, setIsWarning] = createSignal<boolean>(false)
 
@@ -281,6 +289,16 @@ function App() {
       setWeights(dfObj.setting.weights)
     } else {
       setWeights(settingDefault.weights)
+    }
+    if (dfObj.setting.volatile !== undefined) {
+      setVolatile(dfObj.setting.volatile)
+    } else {
+      setVolatile(settingDefault.volatile)
+    }
+    if (dfObj.setting.enableVolatile !== undefined) {
+      setEnableVolatile(dfObj.setting.enableVolatile)
+    } else {
+      setEnableVolatile(settingDefault.enableVolatile)
     }
   }
 
@@ -740,6 +758,7 @@ function App() {
           if (!fdObj.card[idx].firstUpdate) {
             fdObj.card[idx].firstUpdate = card.last_review
           }
+          fdObj.card[idx].volatileDue = generateVolatileDue(fdObj.card[idx].fsrs.due, fdObj.card[idx].fsrs.last_review, getEnableVolatile(), getVolatile())
           if (!getTestPreview()) {
             const res = reSetIndex(fdObj)
             fdObj.index = res
@@ -816,6 +835,16 @@ function App() {
                 </div>
 
                 <div>
+                  <label >volatile </label>
+                  <input ref={settingRef.volatileRef} type="number" min={0} max={1} step={0.1} value={getVolatile()} />
+                </div>
+
+                <div>
+                  <label >enableVolatile </label>
+                  <input ref={settingRef.enableVolatileRef} type="checkbox" checked={getEnableVolatile()} />
+                </div>
+
+                <div>
                   <label > retention </label>
                   <input ref={settingRef.retentionRef} type="number" min={0} max={1} step={0.1} value={getRetention()} />
                 </div>
@@ -839,7 +868,7 @@ function App() {
                 () => {
                   batch(async () => {
                     const limitValue = parseInt(settingRef.limitRef.value)
-                    if (limitValue) {
+                    if (limitValue !== undefined) {
                       setLimit(limitValue)
                       setFileData((i) => {
                         i.setting.limit = limitValue
@@ -848,7 +877,7 @@ function App() {
                     }
 
                     const undoValue = parseInt(settingRef.undoMaxRef.value)
-                    if (undoValue) {
+                    if (undoValue !== undefined) {
                       setUndoMax(undoValue)
                       setFileData((i) => {
                         i.setting.undoMax = undoValue
@@ -858,7 +887,7 @@ function App() {
                     }
 
                     const stepValue = parseFloat(settingRef.stepRef.value)
-                    if (stepValue) {
+                    if (stepValue !== undefined) {
                       setStep(stepValue)
                       setFileData((i) => {
                         i.setting.step = stepValue
@@ -867,7 +896,7 @@ function App() {
                     }
 
                     const stepLongValue = parseFloat(settingRef.stepLongRef.value)
-                    if (stepLongValue) {
+                    if (stepLongValue !== undefined) {
                       setStepLong(stepLongValue)
                       setFileData((i) => {
                         i.setting.stepLong = stepLongValue
@@ -876,7 +905,7 @@ function App() {
                     }
 
                     const retentionValue = parseFloat(settingRef.retentionRef.value)
-                    if (retentionValue) {
+                    if (retentionValue !== undefined) {
                       setRetention(retentionValue)
                       setFileData((i) => {
                         i.setting.retention = retentionValue
@@ -886,13 +915,31 @@ function App() {
                     }
 
                     const weightsValue = settingRef.weightsRef.value.split(',').map((i: string) => parseFloat(i.trim()))
-                    if (weightsValue) {
+                    if (weightsValue !== undefined) {
                       setWeights(weightsValue)
                       setFileData((i) => {
                         i.setting.weights = weightsValue
                         return { ...i }
                       })
                       initFsrs(weightsValue, undefined)
+                    }
+
+                    const volatileValue = parseFloat(settingRef.volatileRef.value)
+                    if (volatileValue !== undefined) {
+                      setVolatile(volatileValue)
+                      setFileData((i) => {
+                        i.setting.volatile = volatileValue
+                        return { ...i }
+                      })
+                    }
+
+                    const enableVolatileValue = settingRef.enableVolatileRef.checked ? true : false
+                    if (enableVolatileValue !== undefined) {
+                      setEnableVolatile(enableVolatileValue)
+                      setFileData((i) => {
+                        i.setting.enableVolatile = enableVolatileValue
+                        return { ...i }
+                      })
                     }
 
                     setIsSetting(false)
@@ -1060,7 +1107,26 @@ function App() {
           </Show>
 
           <div>
-            {`idx: ${getIndex()} deck: ${getDeckIdx()}/${getDeckCount()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()} undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1}`}
+            <div>
+
+              {(() => {
+                return `idx: ${getIndex()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()}`
+              })()}
+            </div>
+            <div>
+              {(() => {
+                const index = getIndex()
+                let v: number | string = ""
+                if (index !== undefined) {
+                  if (getFileData().card[index].fsrs) {
+                    const vDue = getFileData().card[index].volatileDue
+                    const fDue = getFileData().card[index].fsrs.last_review
+                    v = DaysBetween(vDue, fDue)
+                  }
+                }
+                return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} v:${v}`
+              })()}
+            </div>
           </div>
 
           <div class="text">

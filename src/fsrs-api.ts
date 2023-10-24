@@ -73,7 +73,7 @@ export function json2str(obj: any) {
 
 export function str2json(text: string) {
     function dateTimeReviver(key: string, value: any) {
-        if (key == "due" || key == "last_review" || key == "firstUpdate") {
+        if (key == "due" || key == "last_review" || key == "firstUpdate" || key == "volatileDue") {
             return new Date(value);
         }
         return value;
