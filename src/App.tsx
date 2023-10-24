@@ -759,6 +759,7 @@ function App() {
             fdObj.card[idx].firstUpdate = card.last_review
           }
           fdObj.card[idx].volatileDue = generateVolatileDue(fdObj.card[idx].fsrs.due, fdObj.card[idx].fsrs.last_review, getEnableVolatile(), getVolatile())
+          fdObj.card[idx].volatileDiff = DaysBetween(fdObj.card[idx].volatileDue, fdObj.card[idx].fsrs.due)//volatileDue是有用的,而volatileDiff只是用来方便观察状态
           if (!getTestPreview()) {
             const res = reSetIndex(fdObj)
             fdObj.index = res
@@ -1119,9 +1120,7 @@ function App() {
                 let v: number | string = ""
                 if (index !== undefined) {
                   if (getFileData().card[index].fsrs) {
-                    const vDue = getFileData().card[index].volatileDue
-                    const fDue = getFileData().card[index].fsrs.last_review
-                    v = DaysBetween(vDue, fDue)
+                    v = getFileData().card[index].volatileDiff
                   }
                 }
                 return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} v:${v}`
