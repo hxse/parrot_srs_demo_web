@@ -667,7 +667,6 @@ function App() {
   createEffect(on(getDeckArr, (deckArr) => {
     if (getFileData().name) {
       console.log(deckArr)
-      // debugger
     }
   }, { defer: false }));
 
@@ -866,10 +865,26 @@ function App() {
                 </div>
               </div>
             </div>
+
             <div class='settingPage-button'>
+
               <button onclick={
                 () => setIsSetting(false)
               }>取消</button>
+
+              <button class='default' onclick={
+                () => {
+                  settingRef.limitRef.value = settingDefault.limit
+                  settingRef.undoMaxRef.value = settingDefault.undoMax
+                  settingRef.stepRef.value = settingDefault.step
+                  settingRef.stepLongRef.value = settingDefault.stepLong
+                  settingRef.retentionRef.value = settingDefault.retention
+                  settingRef.weightsRef.value = settingDefault.weights
+                  settingRef.volatileRef.value = settingDefault.volatile
+                  settingRef.enableVolatileRef.checked = settingDefault.enableVolatile
+                }
+              }>默认</button>
+
               <button onclick={
                 () => {
                   batch(async () => {
@@ -951,7 +966,8 @@ function App() {
                     setIsSetting(false)
                   })
                 }
-              }>完成</button>
+              }>确定</button>
+
             </div>
           </div>
         </div>
@@ -1005,6 +1021,10 @@ function App() {
               runSaveFile(true)
             }}>输出</button>
             <button onclick={() => {
+              const r = confirm("确定要清空所有缓存数据吗");
+              if (!r) {
+                return
+              }
               store(getIdb(), 'clear', { storeName: 'file' })
               store(getIdb(), 'clear', { storeName: 'media' })
               location.reload();
@@ -1411,9 +1431,19 @@ function App() {
                                 }
                               </textarea>
                               <br />
+
                               <button onclick={() => {
                                 setIsChange(false)
                               }}>取消</button>
+
+                              <button class='default' onclick={() => {
+                                const idx = getIndex()
+                                if (idx !== undefined) {
+                                  textareaRef1.value = getFileData().card[idx].text['en']
+                                  textareaRef2.value = getFileData().card[idx].text['zh-cn']
+                                }
+                              }}>默认</button>
+
                               <button onclick={() => {
                                 batch(async () => {
                                   setFileData((i) => {
