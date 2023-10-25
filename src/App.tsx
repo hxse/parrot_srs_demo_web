@@ -1090,6 +1090,13 @@ function App() {
             }}>{'设置'}</button>
 
             <button ref={changeRef} id="setting" onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
+              }
+              if (getIndex() === undefined || getIndex() === null) {
+                return
+              }
               setIsChange((i) => !i)
             }}>{'修改'}</button>
           </div>
