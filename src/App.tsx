@@ -1143,7 +1143,7 @@ function App() {
                     v = getFileData().card[index].volatileDiff
                   }
                 }
-                return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} v:${v}`
+                return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} vDiff:${v}`
               })()}
             </div>
           </div>
