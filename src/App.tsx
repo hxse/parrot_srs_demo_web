@@ -193,6 +193,10 @@ let beginRef: any
 let startOffsetRef: any
 let endOffsetRef: any
 let logRef: any
+let changeRef: any
+let textareaRef1: any
+let textareaRef2: any
+
 function App() {
   //test参数是用来测试的
   const [getTestDate,] = createSignal<boolean>(false)
@@ -258,6 +262,7 @@ function App() {
   const [getLockAudio, setLockAudio] = createSignal<boolean>(true)
   const [getBeginAudio, setBeginAudio] = createSignal<number>(0)
 
+  const [getIsChange, setIsChange] = createSignal<boolean>(false)
 
   function initSetting(dfObj: any) {
     if (dfObj.setting.limit !== undefined) {
@@ -973,114 +978,121 @@ function App() {
       <Show when={!getIsSetting() && !getIsStatistic()}>
 
         <div class="card">
-          <button onClick={readZip}>
-            打开文件
-          </button>
-          <button onClick={async () => {
-            const dirHandle = await openDir()
-            await readDir(dirHandle, 'dir')
-          }}>
-            打开文件夹
-          </button>
-          <button onclick={() => {
-            if (!getIsLoad()) {
-              alert('请先导入文件')
-              return
-            }
-            // runDownloadFile(fileData())
-            runSaveFile(false)
-          }}>保存</button>
-          <button onclick={() => {
-            if (!getIsLoad()) {
-              alert('请先导入文件')
-              return
-            }
-            // runDownloadFile(fileData())
-            runSaveFile(true)
-          }}>输出</button>
-          <button onclick={() => {
-            store(getIdb(), 'clear', { storeName: 'file' })
-            store(getIdb(), 'clear', { storeName: 'media' })
-            location.reload();
-          }}>清空</button>
-          <button id="undo" onclick={() => {
-            if (!getIsLoad()) {
-              alert('请先导入文件')
-              return
-            }
-            setUndo((undoObj) => {
-              const last = undoObj[undoObj.length - 1]
-              if (last) {
-                if (last.act == "update" || last.act == "pause") {
-                  const fdObj = str2json(last['config.json'])
-                  batch(async () => {
-                    setFileData({ ...fdObj })
-                    if (getTestPreview()) {
-                      setIndex(fdObj.index)
-                    } else {
-                      setIndex(reSetIndex(fdObj))
-                    }
-                    if (last.act == "update") {
-                      console.log('回撤update模式', undoObj)
-                      setLogsCsv((i: string[]) => i.slice(0, - 1))
-                    } else {
-                      setLogsCsv((i: string[]) => [...i])
-                      console.log('回撤pause模式', undoObj)
-                    }
-                    setIsFront(true)
-                  })
-                }
+          <div class="top-bar">
+            <button onClick={readZip}>
+              文件
+            </button>
+            <button onClick={async () => {
+              const dirHandle = await openDir()
+              await readDir(dirHandle, 'dir')
+            }}>
+              目录
+            </button>
+            <button onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
               }
-              return addUndo('delete', undoObj, undefined, getUndoMax())
-            })
-          }}>回撤</button>
-          <button id="pause" onclick={() => {
-            if (!getIsLoad()) {
-              alert('请先导入文件')
-              return
-            }
-            batch(async () => {
-              setFileData((i) => {
-                const idx = getIndex()
-                if (idx == undefined) {
-                  return i
+              // runDownloadFile(fileData())
+              runSaveFile(false)
+            }}>保存</button>
+            <button onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
+              }
+              // runDownloadFile(fileData())
+              runSaveFile(true)
+            }}>输出</button>
+            <button onclick={() => {
+              store(getIdb(), 'clear', { storeName: 'file' })
+              store(getIdb(), 'clear', { storeName: 'media' })
+              location.reload();
+            }}>清空</button>
+            <button id="undo" onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
+              }
+              setUndo((undoObj) => {
+                const last = undoObj[undoObj.length - 1]
+                if (last) {
+                  if (last.act == "update" || last.act == "pause") {
+                    const fdObj = str2json(last['config.json'])
+                    batch(async () => {
+                      setFileData({ ...fdObj })
+                      if (getTestPreview()) {
+                        setIndex(fdObj.index)
+                      } else {
+                        setIndex(reSetIndex(fdObj))
+                      }
+                      if (last.act == "update") {
+                        console.log('回撤update模式', undoObj)
+                        setLogsCsv((i: string[]) => i.slice(0, - 1))
+                      } else {
+                        setLogsCsv((i: string[]) => [...i])
+                        console.log('回撤pause模式', undoObj)
+                      }
+                      setIsFront(true)
+                    })
+                  }
                 }
-
-                setUndo((undoObj) => {
-                  return addUndo('pause', undoObj, { ...i }, getUndoMax())
-                })
-
-                i.card[idx].pause = true
-
-                if (getTestPreview()) {
-                  setIndex(idx)
-                } else {
-                  setIndex(reSetIndex(i))
-                }
-                setLogsCsv((i) => [...i])
-                return { ...i }
+                return addUndo('delete', undoObj, undefined, getUndoMax())
               })
-              setIsFront(true)
-            })
-          }}>{'暂停'}</button>
+            }}>回撤</button>
 
-          <button id="statistic" onclick={() => {
-            if (!getIsLoad()) {
-              alert('请先导入文件')
-              return
-            }
-            audioRef.pause()
-            setIsStatistic(true)
-          }}>{'统计'}</button>
-          <button id="setting" onclick={() => {
-            if (!getIsLoad()) {
-              alert('请先导入文件')
-              return
-            }
-            audioRef.pause()
-            setIsSetting(true)
-          }}>{'设置'}</button>
+            <button id="pause" onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
+              }
+              batch(async () => {
+                setFileData((i) => {
+                  const idx = getIndex()
+                  if (idx == undefined) {
+                    return i
+                  }
 
+                  setUndo((undoObj) => {
+                    return addUndo('pause', undoObj, { ...i }, getUndoMax())
+                  })
+
+                  i.card[idx].pause = true
+
+                  if (getTestPreview()) {
+                    setIndex(idx)
+                  } else {
+                    setIndex(reSetIndex(i))
+                  }
+                  setLogsCsv((i) => [...i])
+                  return { ...i }
+                })
+                setIsFront(true)
+              })
+            }}>{'暂停'}</button>
+
+            <button id="statistic" onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
+              }
+              audioRef.pause()
+              setIsStatistic(true)
+            }}>{'统计'}</button>
+
+            <button id="setting" onclick={() => {
+              if (!getIsLoad()) {
+                alert('请先导入文件')
+                return
+              }
+              audioRef.pause()
+              setIsSetting(true)
+            }}>{'设置'}</button>
+
+            <button ref={changeRef} id="setting" onclick={() => {
+              setIsChange((i) => !i)
+            }}>{'修改'}</button>
+          </div>
 
           <Show when={getTestDate()}>
             <button onClick={() => {
@@ -1105,6 +1117,7 @@ function App() {
             }}>
               next
             </button>
+
           </Show>
 
           <div>
@@ -1311,7 +1324,6 @@ function App() {
                   </Show>
 
 
-
                   <div>{
                     (() => {
                       const idx = getIndex()
@@ -1324,14 +1336,107 @@ function App() {
                       else {
                         return (
                           <Show when={!getIsFront()}>
-                            {
-                              getFileData()?.card?.[idx]?.text?.['en']
-                            }
-                            <br />
-                            <br />
-                            {
-                              getFileData()?.card?.[idx]?.text?.['zh-cn']
-                            }
+                            <Show when={!getIsChange()}>
+                              <div>
+                                {
+                                  (() => {
+                                    const idx = getIndex()
+                                    if (idx !== undefined) {
+                                      const text = getFileData().card[idx].text
+                                      const textChanged = getFileData().card[idx].textChanged
+                                      if (textChanged && textChanged['en']) {
+                                        return <div> <span class='textDivChanged'>{textChanged['en']}</span></div>
+                                      }
+                                      return <div> <span class='textDiv'>{text['en']}</span></div>
+                                    }
+                                  })()
+                                }
+                              </div>
+                              <br />
+                              <div>
+                                {
+                                  (() => {
+                                    const idx = getIndex()
+                                    if (idx !== undefined) {
+                                      const text = getFileData().card[idx].text
+                                      const textChanged = getFileData().card[idx].textChanged
+                                      if (textChanged && textChanged['zh-cn']) {
+                                        return <div> <span class='textDivChanged'>{textChanged['zh-cn']}</span></div>
+                                      }
+                                      return <div> <span class='textDiv'>{text['zh-cn']}</span></div>
+                                    }
+                                  })()
+                                }
+                              </div>
+                              <br />
+                            </Show>
+
+                            <Show when={getIsChange()}>
+                              <textarea ref={textareaRef1} >
+                                {
+                                  (() => {
+                                    const idx = getIndex()
+                                    if (idx !== undefined) {
+                                      const text = getFileData().card[idx].text
+                                      const textChanged = getFileData().card[idx].textChanged
+                                      if (textChanged && textChanged['en']) {
+                                        return textChanged['en']
+                                      }
+                                      return text['en']
+                                    }
+                                  })()
+                                }
+                              </textarea>
+                              <br />
+                              <textarea ref={textareaRef2}>
+                                {
+                                  (() => {
+                                    const idx = getIndex()
+                                    if (idx !== undefined) {
+                                      const text = getFileData().card[idx].text
+                                      const textChanged = getFileData().card[idx].textChanged
+                                      if (textChanged && textChanged['zh-cn']) {
+                                        return textChanged['zh-cn']
+                                      }
+                                      return text['zh-cn']
+                                    }
+                                  })()
+                                }
+                              </textarea>
+                              <br />
+                              <button onclick={() => {
+                                setIsChange(false)
+                              }}>取消</button>
+                              <button onclick={() => {
+                                batch(async () => {
+                                  setFileData((i) => {
+                                    const idx = getIndex()
+                                    if (idx !== undefined) {
+                                      if (!i.card[idx].textChanged) {
+                                        i.card[idx].textChanged = {}
+                                      }
+                                      if (i.card[idx].text['en'] == textareaRef1.value || textareaRef1.value == "") {
+                                        delete i.card[idx].textChanged['en']
+                                      } else {
+                                        i.card[idx].textChanged['en'] = textareaRef1.value
+                                      }
+                                      if (i.card[idx].text['zh-cn'] == textareaRef2.value || textareaRef2.value == "") {
+                                        delete i.card[idx].textChanged['zh-cn']
+                                      } else {
+                                        i.card[idx].textChanged['zh-cn'] = textareaRef2.value
+                                      }
+                                      if (Object.keys(i.card[idx].textChanged).length == 0) {
+                                        delete i.card[idx].textChanged
+                                      }
+                                      console.log('save:', i.card[idx].textChanged)
+                                    }
+                                    return { ...i }
+                                  })
+                                  setIsChange(false)
+                                })
+
+                              }}>确定</button>
+                            </Show>
                           </Show>
                         )
                       }
@@ -1348,18 +1453,13 @@ function App() {
           <br />
 
 
-          <Show
-            when={getIsFront() && getIndex() !== undefined}
-          >
+          <Show when={getIsFront() && getIndex() !== undefined}>
             <button id="showAnswer" class='showAnswer' onclick={() => {
               setIsFront(false)
             }}>{'show answer'}</button>
           </Show>
 
-          <Show
-            when={!getIsFront()}
-          >
-
+          <Show when={!getIsFront()}>
             <Show when={getIndex() !== undefined}>
               <button id="rating1" onClick={() => {
                 if (getIndex() === undefined) return
@@ -1367,6 +1467,7 @@ function App() {
                 showRating(1, true)
                 setBeginAudio(0)
                 setIsFront(true)
+                setIsChange(false)
               }}>
                 {getRating()[1] ? getRating()[1] : 'rating1'}
               </button>
@@ -1376,6 +1477,7 @@ function App() {
                 showRating(2, true)
                 setBeginAudio(0)
                 setIsFront(true)
+                setIsChange(false)
               }}>
                 {getRating()[2] ? getRating()[2] : 'rating2'}
               </button>
@@ -1385,6 +1487,7 @@ function App() {
                 showRating(3, true)
                 setBeginAudio(0)
                 setIsFront(true)
+                setIsChange(false)
               }}>
                 {getRating()[3] ? getRating()[3] : 'rating3'}
               </button>
@@ -1394,6 +1497,7 @@ function App() {
                 showRating(4, true)
                 setBeginAudio(0)
                 setIsFront(true)
+                setIsChange(false)
               }}>
                 {getRating()[4] ? getRating()[4] : 'rating4'}
               </button>
