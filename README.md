@@ -64,4 +64,4 @@
       * `g lw "D:\my_repo\parrot_fashion\download\BBC Learning English" 0 0 0 -enable_zip 1`
     * 合并牌组
       * `cd D:\my_repo\parrot_fashion\crawler`
-      * `pdm run python .\loop_whisper.py mzf 'D:\my_repo\parrot_fashion\download\Kurzgesagt  In a Nutshell\Kurzgesagt  In a Nutshell - Videos UCsXVk37bltHxD1rDPwtNM8Q' "C:\Users\hxse\Downloads\srs file" -regex="^.*2022(0[6789]|1[012]).*mp3$"  -stemStart 0 -stemEnd -1`
+      * `pdm run python .\loop_whisper.py mzf 'D:\my_repo\parrot_fashion\download\Kurzgesagt  In a Nutshell\Kurzgesagt  In a Nutshell - Videos UCsXVk37bltHxD1rDPwtNM8Q' "C:\Users\hxse\Downloads\srs file" -regex="^.*2022(0[123456789]|1[012]).*mp3$"  -stemStart 0 -stemEnd -1`
