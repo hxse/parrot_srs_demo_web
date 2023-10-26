@@ -7,9 +7,10 @@
   margin: 0 auto;
   overflow: scroll;
   text-align: left;
-  height: 20vh;
+  height: 6rem;
   width: 90vw;
   display: block;
+  white-space: nowrap;
 }
 
 .text {
@@ -110,6 +111,17 @@ label {}
   width: 20vw;
   /* height: 2.5em; */
   /* font-size: 1em; */
+}
+
+input {
+  display: inline-block;
+  padding: 4px;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+.audioBar button {
+  width: 15vw;
 }
 
 textarea {

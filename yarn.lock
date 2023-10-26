@@ -1062,6 +1062,11 @@ setimmediate@^1.0.5:
   resolved "https://registry.npmmirror.com/setimmediate/-/setimmediate-1.0.5.tgz"
   integrity sha512-MATJdZp8sLqDl/68LfQmbP8zKPLQNV6BIZoIgrscFDQ+RsvK/BxeDQOgyxKKoh0y/8h3BqVFnCqQ/gd+reiIXA==
 
+solid-icons@^1.0.12:
+  version "1.0.12"
+  resolved "https://registry.npmmirror.com/solid-icons/-/solid-icons-1.0.12.tgz#66d506a425ec37b4973a880224637d31441a1fa8"
+  integrity sha512-HOIQ2nFGLEH9/QHnMiu6CZkEMrRlrEvxpX3V3XikvQQ/CQNhOKl2vLQALaJYgz3MvfPP5wkid+q79tTdIw5YGQ==
+
 solid-js@^1.7.8:
   version "1.7.12"
   resolved "https://registry.npmmirror.com/solid-js/-/solid-js-1.7.12.tgz"

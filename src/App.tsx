@@ -13,6 +13,8 @@ import { dateTimeDiff } from "date-differencer";
 import { init_keyboard } from './keyboard.ts'
 import { DaysBetween, generateVolatileDue } from './volatile.tsx'
 
+import { BsPlay, BsStop, BsChevronLeft, BsChevronRight, BsChevronDoubleLeft, BsChevronDoubleRight, BsLock, BsCursorText } from 'solid-icons/bs'
+
 function sameDay(date1: Date, date2: Date) {
   return date1.getFullYear() === date2.getFullYear() &&
     date1.getMonth() === date2.getMonth() &&
@@ -168,7 +170,7 @@ function getDeck(fdObj: any) {
 
 const settingDefault = {
   limit: 20,
-  undoMax: 6,
+  undoMax: 15,
   step: 2,
   stepLong: 4,
   volatile: 0.1,
@@ -1202,7 +1204,7 @@ function App() {
                       {/* <source id="myAudio" src={getAudio()} type="audio/mp3" ></source> */}
                     </audio>
                   </div>
-                  <div>
+                  <div class='audioBar'>
                     <button
                       id="play"
                       onclick={
@@ -1217,7 +1219,19 @@ function App() {
                           })
                         }
                       }
-                    >play</button>
+                    >
+                      <BsPlay />
+                    </button>
+                    <button
+                      id="stop"
+                      onclick={
+                        () => {
+                          audioRef.pause()
+                        }
+                      }
+                    >
+                      <BsStop />
+                    </button>
                     <button
                       id="backward"
                       onclick={
@@ -1225,7 +1239,9 @@ function App() {
                           audioRef.currentTime -= getStep()
                         }
                       }
-                    >{'<-'}</button>
+                    >
+                      <BsChevronLeft />
+                    </button>
                     <button
                       id="forward"
                       onclick={
@@ -1233,7 +1249,9 @@ function App() {
                           audioRef.currentTime += getStep()
                         }
                       }
-                    >{'->'}</button>
+                    >
+                      <BsChevronRight />
+                    </button>
                     <button
                       id="backward2"
                       onclick={
@@ -1241,7 +1259,9 @@ function App() {
                           audioRef.currentTime -= getStepLong()
                         }
                       }
-                    >{'<--'}</button>
+                    >
+                      <BsChevronDoubleLeft />
+                    </button>
                     <button
                       id="forward2"
                       onclick={
@@ -1249,14 +1269,18 @@ function App() {
                           audioRef.currentTime += getStepLong()
                         }
                       }
-                    >{'-->'}</button>
+                    >
+                      <BsChevronDoubleRight />
+                    </button>
                     <br />
-                    <label > lock</label>
+                    <BsLock />
+                    {/* <label > lock</label> */}
                     <input id="lock" type="checkbox" checked={getLockAudio()} onclick={() => {
                       setLockAudio(!getLockAudio())
                     }} />
 
-                    <label > {'||>'}</label>
+                    {/* <label > {'||>'}</label> */}
+                    <BsChevronLeft />
                     <input id="startOffset" ref={startOffsetRef} class='offset' type="number" step="0.1" value={
                       (() => {
                         const idx = getIndex()
@@ -1283,7 +1307,8 @@ function App() {
                       startOffsetRef.focus()
                     }} />
                     <span>(s) </span>
-                    <label > {'<||'}</label>
+                    {/* <label > {'<||'}</label> */}
+                    <BsChevronRight />
                     <input id="endOffset" ref={endOffsetRef} class='offset' type="number" step="0.1" value={
                       (() => {
                         const idx = getIndex()
@@ -1311,7 +1336,8 @@ function App() {
                       endOffsetRef.focus()
                     }} />
                     <span>(s)</span>
-                    <label > {'||'} </label>
+                    {/* <label > {'||'} </label> */}
+                    <BsCursorText />
                     <input id="begin" ref={beginRef} class='offset' type="number" step="0.1" min="0" max="1" value={getBeginAudio()} onInput={(e) => {
                       console.log(e.target.value)
                       if (parseFloat(e.target.value) > 1) {
@@ -1542,7 +1568,6 @@ function App() {
           </Show>
 
           <div ref={logRef} class='scroll'>
-
             <Show when={getIsLogsFilter()}>
               <For each={getLogsCsvExtend()}>
                 {(log) => (
@@ -1552,6 +1577,7 @@ function App() {
                 )}
               </For>
             </Show>
+
             <Show when={!getIsLogsFilter()}>
               <For each={getLogsCsv()}>
                 {(log) => (
@@ -1561,8 +1587,8 @@ function App() {
                 )}
               </For>
             </Show>
-
           </div>
+
         </div>
       </Show>
 

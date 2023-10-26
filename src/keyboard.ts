@@ -139,42 +139,122 @@ export async function init_keyboard() {
 
     listener.start();
 
-    // if (!navigator.getGamepads) {
-    //     // Browser supports the Gamepad API
-    //     console.log("浏览器不支持gamepads")
-    // }
-    // window.addEventListener("gamepadconnected", function (e) {
-    //     const gp = navigator.getGamepads()[e.gamepad.index];
-    //     console.log(
-    //         "控制器已连接于 %d 位：%s. %d 个按钮，%d 个坐标方向。",
-    //         gp?.index,
-    //         gp?.id,
-    //         gp?.buttons.length,
-    //         gp?.axes.length,
-    //     );
-    // });
+    runKeyBoard()
+}
 
-    // window.addEventListener('gamepadconnected', (event) => {
-    //     const update = () => {
-    //         for (const gamepad of navigator.getGamepads()) {
-    //             if (!gamepad) continue;
-    //             for (const [index, axis] of gamepad.axes.entries()) {
-    //                 if (axis == -1) {
-    //                     console.log(index, -1)
-    //                 }
-    //                 if (axis == 1) {
-    //                     console.log(index, 1)
-    //                 }
-    //             }
-    //             for (const [index, button] of gamepad.buttons.entries()) {
-    //                 // console.log(index, gamepad.index, button.value, button.touched, button.pressed,)
-    //                 if (button.value) {
-    //                     console.log(index, button.pressed)
-    //                 }
-    //             }
-    //         }
-    //         requestAnimationFrame(update);
-    //     };
-    //     update();
-    // });
+function runKeyBoard() {
+    document.addEventListener('keydown', function (event) {
+        if (event.key == "a" || event.key == "A") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#rating1')
+            if (el) {
+                console.log('click', "rating1")
+                el.click()
+            } else {
+                const el: HTMLElement | null = document.querySelector('#showAnswer')
+                if (el) {
+                    console.log('click', "showAnswer")
+                    el.click()
+                }
+            }
+        }
+        if (event.key == "s" || event.key == "S") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#rating2')
+            if (el) {
+                console.log('click', "rating2")
+                el.click()
+            } else {
+                const el: HTMLElement | null = document.querySelector('#showAnswer')
+                if (el) {
+                    console.log('click', "showAnswer")
+                    el.click()
+                }
+            }
+        }
+        if (event.key == "d" || event.key == "D") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#rating3')
+            if (el) {
+                console.log('click', "rating3")
+                el.click()
+            } else {
+                const el: HTMLElement | null = document.querySelector('#showAnswer')
+                if (el) {
+                    console.log('click', "showAnswer")
+                    el.click()
+                }
+            }
+        }
+        if (event.key == "f" || event.key == "F") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#rating4')
+            if (el) {
+                console.log('click', "rating4")
+                el.click()
+            } else {
+                const el: HTMLElement | null = document.querySelector('#showAnswer')
+                if (el) {
+                    console.log('click', "showAnswer")
+                    el.click()
+                }
+            }
+        }
+        if (event.key == "q" || event.key == "Q") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#stop')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "w" || event.key == "W" || event.key == " ") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#play')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "e" || event.key == "E") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#backward')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "r" || event.key == "R") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#forward')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "c" || event.key == "C") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#backward2')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "v" || event.key == "V") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#forward2')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "t" || event.key == "T") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#pause')
+            if (el) {
+                el.click()
+            }
+        }
+        if (event.key == "g" || event.key == "G") {
+            event.preventDefault();
+            const el: HTMLElement | null = document.querySelector('#undo')
+            if (el) {
+                el.click()
+            }
+        }
+    });
 }
