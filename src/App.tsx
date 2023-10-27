@@ -1008,9 +1008,6 @@ function App() {
 
       <Show when={!getIsSetting() && !getIsStatistic() && !getIsLoadFile()}>
 
-
-
-
         <div class="card">
           <div class="top-bar">
             <button onClick={async () => {
