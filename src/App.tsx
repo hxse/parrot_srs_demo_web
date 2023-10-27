@@ -997,9 +997,7 @@ function App() {
         </div>
       </Show>
 
-      <Show
-        when={getIsLoadFile()}
-      >
+      <Show when={getIsLoadFile()}>
         <div class='loadFile'>
           <BiRegularLoaderCircle size={50} class='rotate' ></BiRegularLoaderCircle>
           <br />
