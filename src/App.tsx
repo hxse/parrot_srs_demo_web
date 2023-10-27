@@ -14,6 +14,7 @@ import { init_keyboard } from './keyboard.ts'
 import { DaysBetween, generateVolatileDue } from './volatile.tsx'
 
 import { BsPlay, BsStop, BsChevronLeft, BsChevronRight, BsChevronDoubleLeft, BsChevronDoubleRight, BsLock, BsCursorText } from 'solid-icons/bs'
+import { BiRegularLoaderCircle } from 'solid-icons/bi'
 
 function sameDay(date1: Date, date2: Date) {
   return date1.getFullYear() === date2.getFullYear() &&
@@ -265,6 +266,8 @@ function App() {
   const [getBeginAudio, setBeginAudio] = createSignal<number>(0)
 
   const [getIsChange, setIsChange] = createSignal<boolean>(false)
+
+  const [getIsLoadFile, setIsLoadFile] = createSignal<boolean>(false)
 
   function initSetting(dfObj: any) {
     if (dfObj.setting.limit !== undefined) {
@@ -814,6 +817,7 @@ function App() {
 
   return (
     <div class="parent">
+
       <Show when={getIsSetting()}>
 
         <div class="settingPage-warp">
@@ -993,16 +997,54 @@ function App() {
         </div>
       </Show>
 
-      <Show when={!getIsSetting() && !getIsStatistic()}>
+      <Show
+        when={getIsLoadFile()}
+      >
+        <div class='loadFile'>
+          <BiRegularLoaderCircle size={50} class='rotate' ></BiRegularLoaderCircle>
+          <br />
+          loading file...
+          <br />
+        </div>
+      </Show>
+
+      <Show when={!getIsSetting() && !getIsStatistic() && !getIsLoadFile()}>
+
+
+
 
         <div class="card">
           <div class="top-bar">
-            <button onClick={readZip}>
+            <button onClick={async () => {
+              const startTime = new Date()
+              setIsLoadFile(true)
+
+              try {
+                await readZip()
+              } catch (error) {
+                console.log(error)
+              }
+
+              const endTime = new Date()
+              console.log('time readZip', (startTime.getTime() - endTime.getTime()) / 1000)
+              setIsLoadFile(false)
+            }}>
               文件
             </button>
             <button onClick={async () => {
-              const dirHandle = await openDir()
-              await readDir(dirHandle, 'dir')
+              const startTime = new Date()
+              setIsLoadFile(true)
+
+              try {
+                const dirHandle = await openDir()
+                await readDir(dirHandle, 'dir')
+              } catch (error) {
+                console.log(error)
+              }
+
+              const endTime = new Date()
+              console.log('time readDir', (startTime.getTime() - endTime.getTime()) / 1000)
+              setIsLoadFile(false)
             }}>
               目录
             </button>
@@ -1173,8 +1215,9 @@ function App() {
           <div class="text">
             <Show
               when={getIsLoad()}
-              fallback={<div class="wait">please select a local file</div>}
-            >
+              fallback={
+                <div class="wait">please select a local file</div>
+              }>
 
               <div class="text-child">
                 <div>

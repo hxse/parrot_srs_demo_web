@@ -130,3 +130,59 @@ textarea {
 }
 
 .default {}
+
+
+.rotate {
+  /* display: flex; */
+  /* align-items: center; */
+  /* justify-content: center; */
+  /* font-size: 50px; */
+  /* color: red; */
+  animation: rotate 5s linear infinite;
+  /* -webkit-animation: rotate 10s linear infinite; */
+
+}
+
+@keyframes rotate {
+  0% {
+    transform: rotate(0);
+  }
+
+  25% {
+    transform: rotate(90deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  75% {
+    transform: rotate(270deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+@-webkit-keyframes rotate {
+  0% {
+    transform: rotate(0);
+  }
+
+  25% {
+    transform: rotate(90deg);
+  }
+
+  50% {
+    transform: rotate(180deg);
+  }
+
+  75% {
+    transform: rotate(270deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
+}
