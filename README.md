@@ -43,7 +43,8 @@
   * https://terrillthompson.com/624
   * https://stackoverflow.com/questions/37768732/how-to-convert-mp3s-to-constant-bitrate-using-ffmpeg
 # todo
-  * 用Legend-State重构
+  * 用Legend-State重构,
+    * 感觉有点没必要, 不如直接用jotai, 持久化手写一套web一套rn就行了
     * https://www.legendapp.com/open-source/state/intro/introduction/
   * 支持手柄,安卓浏览器不行 https://hardwaretester.com/gamepad
     * 用key mapper可以映射安卓手柄 https://github.com/keymapperorg/KeyMapper
@@ -55,6 +56,7 @@
     * https://developer.chrome.com/blog/autoplay/
   * 重构时,删除getTestPreview模式, 多余没必要,getTestDate可以保留,config.json里的index字段没有用可以删了,属于历史遗留
   * 支持树状目录,人性化的导入后合并牌组, 导出后合并牌组, 重命名牌组文件夹, 调整牌组顺序, 目前不弄了, 太花里胡哨了,用命令行工具加上手动调整解决吧
+    * 不同的setting适合不同的tree路径
     * 不过每张卡片都有deck_name字段, 以后有空弄是可以的
     * 快捷键设置可以放setting里,不过目前懒得写了
     * 统计也可以写一下,目前懒的写了
