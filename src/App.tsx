@@ -1243,73 +1243,75 @@ function App() {
                     </audio>
                   </div>
                   <div class='audioBar'>
-                    <button
-                      id="play"
-                      onclick={
-                        () => {
-                          const idx = getIndex()
-                          audioPlay(idx === undefined ? undefined : {
-                            startTime: getFileData()?.card?.[idx]?.start,
-                            endTime: getFileData()?.card?.[idx]?.end,
-                            startOffset: getFileData()?.card?.[idx]?.startOffset,
-                            endOffset: getFileData()?.card?.[idx]?.endOffset,
-                            begin: getBeginAudio()
-                          })
+                    <div class="audioBarLine1">
+                      <button
+                        id="play"
+                        onclick={
+                          () => {
+                            const idx = getIndex()
+                            audioPlay(idx === undefined ? undefined : {
+                              startTime: getFileData()?.card?.[idx]?.start,
+                              endTime: getFileData()?.card?.[idx]?.end,
+                              startOffset: getFileData()?.card?.[idx]?.startOffset,
+                              endOffset: getFileData()?.card?.[idx]?.endOffset,
+                              begin: getBeginAudio()
+                            })
+                          }
                         }
-                      }
-                    >
-                      <BsPlay />
-                    </button>
-                    <button
-                      id="stop"
-                      onclick={
-                        () => {
-                          audioRef.pause()
+                      >
+                        <BsPlay />
+                      </button>
+                      <button
+                        id="stop"
+                        onclick={
+                          () => {
+                            audioRef.pause()
+                          }
                         }
-                      }
-                    >
-                      <BsStop />
-                    </button>
-                    <button
-                      id="backward"
-                      onclick={
-                        () => {
-                          audioRef.currentTime -= getStep()
+                      >
+                        <BsStop />
+                      </button>
+                      <button
+                        id="backward"
+                        onclick={
+                          () => {
+                            audioRef.currentTime -= getStep()
+                          }
                         }
-                      }
-                    >
-                      <BsChevronLeft />
-                    </button>
-                    <button
-                      id="forward"
-                      onclick={
-                        () => {
-                          audioRef.currentTime += getStep()
+                      >
+                        <BsChevronLeft />
+                      </button>
+                      <button
+                        id="forward"
+                        onclick={
+                          () => {
+                            audioRef.currentTime += getStep()
+                          }
                         }
-                      }
-                    >
-                      <BsChevronRight />
-                    </button>
-                    <button
-                      id="backward2"
-                      onclick={
-                        () => {
-                          audioRef.currentTime -= getStepLong()
+                      >
+                        <BsChevronRight />
+                      </button>
+                      <button
+                        id="backward2"
+                        onclick={
+                          () => {
+                            audioRef.currentTime -= getStepLong()
+                          }
                         }
-                      }
-                    >
-                      <BsChevronDoubleLeft />
-                    </button>
-                    <button
-                      id="forward2"
-                      onclick={
-                        () => {
-                          audioRef.currentTime += getStepLong()
+                      >
+                        <BsChevronDoubleLeft />
+                      </button>
+                      <button
+                        id="forward2"
+                        onclick={
+                          () => {
+                            audioRef.currentTime += getStepLong()
+                          }
                         }
-                      }
-                    >
-                      <BsChevronDoubleRight />
-                    </button>
+                      >
+                        <BsChevronDoubleRight />
+                      </button>
+                    </div>
                     <br />
                     <BsLock />
                     {/* <label > lock</label> */}
@@ -1605,7 +1607,7 @@ function App() {
             </Show>
           </Show>
 
-          <div ref={logRef} class='scroll'>
+          <div ref={logRef} class="logDiv">
             <Show when={getIsLogsFilter()}>
               <For each={getLogsCsvExtend()}>
                 {(log) => (
