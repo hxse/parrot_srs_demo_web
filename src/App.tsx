@@ -52,7 +52,7 @@ function getCacheName(file: any, obj: any) {
   return `${obj.name} ${file.name}`
 }
 
-function reSetArr(fileData: any) {
+function reSetArr(fileData: any, enableVolatile: boolean) {
   const waitArr = []//已过期的旧卡
   const oldArr = []//未过期的旧卡
   const newArr = []//未学过的新卡
@@ -79,7 +79,7 @@ function reSetArr(fileData: any) {
 
   for (const i of _oldArr) {
     const now = new Date()
-    const due = fileData.card[i].volatileDue
+    const due = enableVolatile ? fileData.card[i].volatileDue : fileData.card[i].fsrs.due
     const diffTime = now.getTime() - due.getTime()
     if (diffTime >= 0) {
       waitArr.push(i)
@@ -418,7 +418,7 @@ function App() {
   }
 
   function reSetIndex(fileData: any) {
-    const { waitArr, oldArr, newArr, pauseArr } = reSetArr(fileData)
+    const { waitArr, oldArr, newArr, pauseArr } = reSetArr(fileData, getEnableVolatile())
 
     console.log('waitArr', waitArr)
     console.log('oldArr', oldArr)
@@ -970,6 +970,7 @@ function App() {
                     }
 
                     setIsSetting(false)
+                    setIndex(reSetIndex(getFileData()))
                   })
                 }
               }>确定</button>
@@ -1203,7 +1204,8 @@ function App() {
                     // volatile date with due date different days
                     v = getFileData().card[index].volatileDiff
                     // expire date with volatile date different days
-                    e = DaysBetween(getFileData().card[index].volatileDue, new Date())
+                    const due = getEnableVolatile() ? getFileData().card[index].volatileDue : getFileData().card[index].fsrs.due
+                    e = DaysBetween(due, new Date())
                   }
                 }
                 return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} vDiff:${v} eDiff:${e}`

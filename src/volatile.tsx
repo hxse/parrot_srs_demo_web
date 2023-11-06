@@ -20,7 +20,7 @@ export function DaysBetween(StartDate: Date, EndDate: Date) {
 
 export function generateVolatileDue(dueTime: Date, lastDueTime: Date, enableVolatile: boolean, volatile: number) {
     if (!enableVolatile) {
-        return dueTime
+        // return dueTime
     }
     const dayDiff = DaysBetween(lastDueTime, dueTime)
     if (dayDiff <= 1) {
