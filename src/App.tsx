@@ -768,7 +768,7 @@ function App() {
             fdObj.card[idx].firstUpdate = card.last_review
           }
           fdObj.card[idx].volatileDue = generateVolatileDue(fdObj.card[idx].fsrs.due, fdObj.card[idx].fsrs.last_review, getEnableVolatile(), getVolatile())
-          fdObj.card[idx].volatileDiff = DaysBetween(fdObj.card[idx].volatileDue, fdObj.card[idx].fsrs.due)//volatileDue是有用的,而volatileDiff只是用来方便观察状态
+          fdObj.card[idx].volatileDiff = DaysBetween(fdObj.card[idx].fsrs.due, fdObj.card[idx].volatileDue)//volatileDue是有用的,而volatileDiff只是用来方便观察状态
           if (!getTestPreview()) {
             const res = reSetIndex(fdObj)
             fdObj.index = res
@@ -1197,12 +1197,16 @@ function App() {
               {(() => {
                 const index = getIndex()
                 let v: number | string = ""
+                let e: number | string = ""
                 if (index !== undefined) {
                   if (getFileData().card[index].fsrs) {
+                    // volatile date with due date different days
                     v = getFileData().card[index].volatileDiff
+                    // expire date with volatile date different days
+                    e = DaysBetween(getFileData().card[index].volatileDue, new Date())
                   }
                 }
-                return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} vDiff:${v}`
+                return `deck: ${getDeckIdx()}/${getDeckCount()}  undo: ${getUndo().length}/${getUndoMax()} log:${getLogsCsvExtend().length - 1} vDiff:${v} eDiff:${e}`
               })()}
             </div>
           </div>
