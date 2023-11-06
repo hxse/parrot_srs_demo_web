@@ -1187,9 +1187,8 @@ function App() {
 
           </Show>
 
-          <div>
+          <div class='state-bar'>
             <div>
-
               {(() => {
                 return `idx: ${getIndex()} limit: ${getLimitDue()}/${getLimitCur()}/${getLimit()} count: ${getWaitArrNum()}/${getOldArrNum()}/${getFileData()?.card?.length - getPauseArrNum()}|-${getPauseArrNum()}`
               })()}

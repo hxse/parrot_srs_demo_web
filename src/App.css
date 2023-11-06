@@ -50,6 +50,8 @@
 
 label {}
 
+.state-bar {}
+
 .wait {
   color: red;
 }

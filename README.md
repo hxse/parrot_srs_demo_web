@@ -60,6 +60,7 @@
     * 不过每张卡片都有deck_name字段, 以后有空弄是可以的
     * 快捷键设置可以放setting里,不过目前懒得写了
     * 统计也可以写一下,目前懒的写了
+    * state-bar组件和logDiv组件刷新两次的原因是, putCsv函数运行了两次, `getLogsCsvExtend().length`状态刷新了两次, 目前懒得优化了,没啥意义
 # 相关命令
   * https://github.com/hxse/parrot_fashion
     * 生成牌组
