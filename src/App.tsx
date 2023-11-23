@@ -777,7 +777,7 @@ function App() {
           return { ...fdObj }
         })
       })
-      scheduling_cards = schedulingCard(card, getTestDate())
+      // scheduling_cards = schedulingCard(card, getTestDate())
 
       function updateLog() {
         if (idx === null || idx === undefined) {
@@ -971,6 +971,7 @@ function App() {
 
                     setIsSetting(false)
                     setIndex(reSetIndex(getFileData()))
+                    showRating(-1, false)
                   })
                 }
               }>确定</button>
